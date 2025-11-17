@@ -5,20 +5,22 @@
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // (Asegúrate que esto esté bien)
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // (Asegúrate que esto esté bien)
 // =============================================
+// =============================================
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
-// Pega tu URL y tu Llave "Publishable" (anon) aquí
-//const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE';
-//const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON';
+// (¡Asegúrate de que tu URL y Llave estén aquí!)
+//const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; 
+//const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; 
 
 // Crea el cliente de Supabase
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// ¡Ya no hay contraseñas ni hashes aquí!
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Selectores de Elementos
+    // Selectores de Elementos (sin cambios)
     const loginView = document.getElementById('login-view');
     const adminView = document.getElementById('admin-view');
     const storeView = document.getElementById('store-view');
@@ -63,10 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const customerLocation = document.getElementById('customer-location');
     const productDetailModal = document.getElementById('product-detail-modal');
     const productDetailContent = document.getElementById('product-detail-content');
-    
-    // ===================================
-    // NUEVOS SELECTORES PARA CHECKOUT
-    // ===================================
     const checkoutSubmitBtn = document.getElementById('checkout-submit-btn');
     const locationStatus = document.getElementById('location-status');
 
@@ -95,28 +93,43 @@ document.addEventListener('DOMContentLoaded', () => {
     
     goToStoreBtn.addEventListener('click', () => showView(storeView));
     adminLoginBtn.addEventListener('click', () => showView(loginView));
-    adminLogoutBtn.addEventListener('click', () => {
-        sessionStorage.removeItem('sirari_admin_logged_in');
-        showView(loginView);
+    
+    // CAMBIO: adminLogoutBtn ahora llama a Supabase
+    adminLogoutBtn.addEventListener('click', async () => {
+        const { error } = await sb.auth.signOut(); // Cierra la sesión en Supabase
+        if (error) console.error("Error al cerrar sesión:", error);
+        showView(loginView); // Manda al login
     });
     
-    loginForm.addEventListener('submit', (e) => {
+    // CAMBIO: loginForm ahora llama a Supabase
+    loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const user = usernameInput.value;
-        const pass = passwordInput.value;
+        // El "username" ahora es el email que creaste
+        const email = usernameInput.value; 
+        const password = passwordInput.value;
 
-        if (user === 'admin' && pass === 'sirari.1') {
-            sessionStorage.setItem('sirari_admin_logged_in', 'true');
+        // 1. Intenta iniciar sesión con Supabase
+        const { data, error } = await sb.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (error) {
+            loginError.textContent = 'Email o contraseña incorrectos.';
+            console.error('Error de login:', error.message);
+        } else {
+            // 2. Si tiene éxito, Supabase guarda la sesión.
+            loginError.textContent = '';
             showView(adminView);
             refreshAdminUI();
-        } else {
-            loginError.textContent = 'Usuario o contraseña incorrectos.';
         }
     });
 
     // =============================================
     //       LÓGICA DEL PANEL (ADMIN) - General
     // =============================================
+    // (Esta lógica ahora es segura, porque si un
+    // atacante la llama, Supabase la bloqueará gracias a RLS)
 
     function refreshAdminUI() {
         renderCategoryList();
@@ -134,6 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     
     // ... (El código de categorías no cambia) ...
+    // ... (Si no estás logueado, Supabase bloqueará el .insert() y .delete()) ...
     function renderCategoryList() {
         categoryList.innerHTML = '';
         categories.forEach(cat => {
@@ -174,13 +188,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (editingId) {
             const oldName = categories.find(c => c.id == editingId).name;
             const { error: catError } = await sb.from('categories').update({ name: newName }).eq('id', editingId);
-            if (catError) { console.error("Error al editar categoría:", catError); return; }
+            if (catError) { console.error("Error al editar categoría:", catError); alert('Error de base de datos. ¿Estás logueado?'); return; }
             const { data: productsToUpdate } = await sb.from('products').select('id').eq('category', oldName);
             const updatePromises = productsToUpdate.map(p => sb.from('products').update({ category: newName }).eq('id', p.id));
             await Promise.all(updatePromises);
         } else {
             const { error } = await sb.from('categories').insert([{ name: newName }]);
-            if (error) console.error("Error al crear categoría:", error);
+            if (error) { console.error("Error al crear categoría:", error); alert('Error de base de datos. ¿Estás logueado?'); }
         }
         categoryNameInput.value = '';
         categoryEditId.value = '';
@@ -212,6 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     
     // ... (El código de productos no cambia) ...
+    // ... (Si no estás logueado, Supabase bloqueará el .insert(), .update() y .delete()) ...
     productImages.addEventListener('change', (e) => {
         imagePreviewContainer.innerHTML = '';
         imageDatacUrls = [];
@@ -289,7 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (error.message.includes('payload too large')) {
                 alert("Error: ¡Las imágenes son demasiado grandes! \nIntenta con menos imágenes o más pequeñas.");
             } else {
-                alert("Error al guardar el producto.");
+                alert("Error al guardar el producto. ¿Estás logueado?");
             }
         } else {
             alert(editingId ? '¡Producto actualizado!' : '¡Producto guardado!');
@@ -345,7 +360,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                 const { error } = await sb.from('products').delete().eq('id', id);
-                if (error) console.error("Error al eliminar:", error);
+                if (error) { console.error("Error al eliminar:", error); alert('Error de base de datos. ¿Estás logueado?'); }
                 await loadDataFromServer();
             }
         }
@@ -433,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
         productDetailContent.innerHTML = `
-            <button class="close-modal" id="close-detail-modal-inner">&times;</button>
+            <button class="close-modal" id="close-detail-modal-inner">×</button>
             <div id="product-detail-gallery">
                 <img src="${mainImageUrl}" id="gallery-main-image" alt="${product.title}">
                 <div id="gallery-thumbnails">${thumbnailsHTML}</div>
@@ -518,7 +533,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h4>${item.title} (x${item.quantity})</h4>
                             <p>Bs. ${itemTotal.toFixed(2)}</p>
                         </div>
-                        <button class="cart-item-remove" data-id="${item.id}">&times;</button>
+                        <button class="cart-item-remove" data-id="${item.id}">×</button>
                     </div>
                 `;
             });
@@ -544,54 +559,41 @@ document.addEventListener('DOMContentLoaded', () => {
     //           LÓGICA DE CHECKOUT
     // =============================================
     
-    // Función auxiliar para "prometer" la geolocalización
+    // ... (El código de checkout con geolocalización no cambia) ...
     const getLocation = () => {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
                 reject(new Error('Geolocalización no soportada.'));
             }
-            // Tiempo límite de 10 segundos
             navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
         });
     };
-
-    // ===================================
-    // LÓGICA DE CHECKOUT (COMPLETAMENTE REESCRITA)
-    // ===================================
     checkoutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
-        // 1. Mostrar estado de carga
         checkoutSubmitBtn.disabled = true;
         checkoutSubmitBtn.textContent = 'Procesando...';
         locationStatus.textContent = 'Obteniendo ubicación, por favor espera...';
 
         const name = customerName.value;
-        const locationReference = customerLocation.value; // Renombrada para claridad
-        const tuNumeroWhatsapp = '59173164833'; // NÚMERO ACTUALIZADO
+        const locationReference = customerLocation.value;
+        const tuNumeroWhatsapp = '59173164833';
         
         let locationLink = '';
         let locationError = false;
 
         try {
-            // 2. Intentar obtener la ubicación
             const position = await getLocation();
             const { latitude, longitude } = position.coords;
             locationLink = `https://maps.google.com/?q=${latitude},${longitude}`;
             locationStatus.textContent = '¡Ubicación obtenida!';
-
         } catch (error) {
-            // 3. Manejar error si el usuario rechaza o falla
             locationError = true;
             console.warn("Error al obtener ubicación:", error.message);
             locationStatus.textContent = 'No se pudo obtener ubicación exacta.';
         }
         
-        // 4. Construir el mensaje de WhatsApp
         let mensaje = `*¡Nuevo Pedido de SIRARI!* 🛍️\n\n`;
         mensaje += `*A nombre de:* ${name}\n\n`;
-        
-        // 5. Añadir la ubicación (link GPS o referencia)
         mensaje += `*--- UBICACIÓN ---*\n`;
         mensaje += `*Referencia Escrita:* ${locationReference}\n`;
         if (locationError) {
@@ -599,7 +601,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             mensaje += `*Link GPS (Exacto):* ${locationLink}\n\n`;
         }
-        
         mensaje += `*--- DETALLE DEL PEDIDO ---*\n`;
 
         let granTotal = 0;
@@ -612,22 +613,17 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje += `*Cantidad:* ${item.quantity}\n`;
             mensaje += `*Subtotal:* Bs. ${totalItem.toFixed(2)}\n`;
         });
-
         mensaje += `\n*-----------------------------------*\n`;
         mensaje += `*TOTAL A PAGAR: Bs. ${granTotal.toFixed(2)}*`;
 
-        // 6. Abrir WhatsApp
         const urlWhatsApp = `https://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
         window.open(urlWhatsApp, '_blank');
         
-        // 7. Resetear todo
         cart = [];
         saveCart();
         renderCart();
         checkoutForm.reset();
         checkoutModal.classList.add('hidden');
-        
-        // Restablecer el botón y el mensaje de estado
         checkoutSubmitBtn.disabled = false;
         checkoutSubmitBtn.textContent = 'Confirmar y Enviar por WhatsApp';
         locationStatus.textContent = '';
@@ -637,35 +633,53 @@ document.addEventListener('DOMContentLoaded', () => {
     //           INICIALIZACIÓN DE LA APP
     // =============================================
     
+    // CAMBIO: La inicialización ahora comprueba la sesión de Supabase
     async function loadDataFromServer() {
         if (SUPABASE_URL === 'URL_DE_TU_PROYECTO_SUPABASE' || SUPABASE_KEY === 'TU_LLAVE_PUBLISHABLE_ANON') {
-            document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong> y añade tu URL y Key de Supabase en las líneas 5 y 6.</p>`;
+            document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong> y añade tu URL y Key de Supabase.</p>`;
             return;
         }
 
         try {
-            const { data: categoriesData, error: catError } = await sb.from('categories').select('*');
-            const { data: productsData, error: prodError } = await sb.from('products').select('*').order('id', { ascending: false });
-
+            // 1. Cargar sesión, categorías y productos al mismo tiempo
+            const [sessionRes, categoriesRes, productsRes] = await Promise.all([
+                sb.auth.getSession(),
+                sb.from('categories').select('*'),
+                sb.from('products').select('*').order('id', { ascending: false })
+            ]);
+            
+            // 2. Manejar errores de datos (fallará si RLS está mal configurado)
+            const { error: catError } = categoriesRes;
+            const { error: prodError } = productsRes;
             if (catError) throw catError;
             if (prodError) throw prodError;
 
-            products = productsData;
-            categories = categoriesData;
+            products = productsRes.data;
+            categories = categoriesRes.data;
             
+            // 3. Dibujar la tienda (esto siempre se hace)
             refreshStoreUI();
             updateCartCount();
             
-            if (sessionStorage.getItem('sirari_admin_logged_in') === 'true') {
-                showView(adminView);
+            // 4. Comprobar si hay una sesión activa
+            const { data: { session } } = sessionRes;
+            
+            if (session) {
+                // Hay un usuario logueado (es 'admin@sirari.com')
+                // El campo de email del login es de tipo 'text', así que actualízalo
+                // para que el usuario sepa qué poner.
+                usernameInput.placeholder = "Email (admin@sirari.com)";
+                showView(adminView); 
                 refreshAdminUI();
             } else {
+                // No hay usuario logueado
+                usernameInput.placeholder = "Email (admin@sirari.com)";
                 showView(storeView);
             }
 
         } catch (error) {
             console.error("Error al cargar datos de Supabase:", error);
-            document.body.innerHTML = `<h1>Error de Conexión</h1><p>No se pudo conectar a Supabase. Revisa tu URL, tu Llave, y que hayas deshabilitado RLS en tus tablas.</p><pre>${error.message}</pre>`;
+            document.body.innerHTML = `<h1>Error de Conexión a Base de Datos</h1><p>No se pudo conectar a Supabase. Revisa tu URL/Llave y tus políticas RLS.</p><pre>${error.message}</pre>`;
         }
     }
     
