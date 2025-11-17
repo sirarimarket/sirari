@@ -5,12 +5,7 @@
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // (Asegúrate que esto esté bien)
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // (Asegúrate que esto esté bien)
 
-// =============================================
-//         CAMBIO IMPORTANTE AQUÍ
-// =============================================
-
 // Crea el cliente de Supabase
-// (Esta era la línea con el error, ahora está corregida)
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -62,6 +57,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const customerLocation = document.getElementById('customer-location');
     const productDetailModal = document.getElementById('product-detail-modal');
     const productDetailContent = document.getElementById('product-detail-content');
+    
+    // ================== -->
+    //   SELECTOR NUEVO   -->
+    // ================== -->
+    const getLocationBtn = document.getElementById('get-location-btn');
+
 
     // =============================================
     //         VARIABLES GLOBALES
@@ -86,7 +87,6 @@ document.addEventListener('DOMContentLoaded', () => {
         viewToShow.classList.remove('hidden');
     }
     
-    // Estos botones ahora funcionarán porque el script no se rompe
     goToStoreBtn.addEventListener('click', () => showView(storeView));
     adminLoginBtn.addEventListener('click', () => showView(loginView));
     adminLogoutBtn.addEventListener('click', () => {
@@ -111,8 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //       LÓGICA DEL PANEL (ADMIN) - General
     // =============================================
-    // (El resto del código es idéntico al anterior y está bien)
-
     function refreshAdminUI() {
         renderCategoryList();
         loadCategoriesIntoSelect();
@@ -597,10 +595,61 @@ document.addEventListener('DOMContentLoaded', () => {
     //           LÓGICA DE CHECKOUT
     // =============================================
     
+    // ================== -->
+    // LÓGICA GPS AÑADIDA -->
+    // ================== -->
+    getLocationBtn.addEventListener('click', () => {
+        if (navigator.geolocation) {
+            getLocationBtn.disabled = true;
+            getLocationBtn.textContent = 'Buscando...';
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    // Éxito
+                    const lat = position.coords.latitude;
+                    const long = position.coords.longitude;
+                    const mapLink = `https://www.google.com/maps?q=${lat},${long}`;
+                    
+                    // Pega el link en el campo de texto
+                    customerLocation.value = mapLink; 
+                    
+                    getLocationBtn.disabled = false;
+                    getLocationBtn.textContent = '📍 Obtener ubicación actual';
+                },
+                (error) => {
+                    // Manejo de errores
+                    console.error("Error al obtener ubicación:", error);
+                    let errorMsg = 'No se pudo obtener la ubicación. ';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMsg += "Permiso denegado. Escríbela manualmente.";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMsg += "Información de ubicación no disponible.";
+                            break;
+                        case error.TIMEOUT:
+                            errorMsg += "Se agotó el tiempo de espera.";
+                            break;
+                        default:
+                            errorMsg += "Un error desconocido ocurrió.";
+                    }
+                    alert(errorMsg);
+                    
+                    getLocationBtn.disabled = false;
+                    getLocationBtn.textContent = '📍 Obtener ubicación actual';
+                }
+            );
+        } else {
+            alert('Tu navegador no soporta geolocalización.');
+        }
+    });
+
+    // Esta función de envío de WhatsApp NO NECESITA CAMBIOS.
+    // Ya toma el valor de 'customerLocation', que ahora contendrá el link.
     checkoutForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = customerName.value;
-        const location = customerLocation.value;
+        const location = customerLocation.value; // ¡Aquí ya viene el link si usaron el botón!
         const tuNumeroWhatsapp = '591XXXXXXXX'; 
         
         if (tuNumeroWhatsapp === '591XXXXXXXX') {
@@ -659,12 +708,11 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshStoreUI();
             updateCartCount();
             
-            // Esta es la lógica que controla qué vista se muestra al cargar
             if (sessionStorage.getItem('sirari_admin_logged_in') === 'true') {
-                showView(adminView); // Si estás logueado, muestra el admin
+                showView(adminView);
                 refreshAdminUI();
             } else {
-                showView(storeView); // Si no, muestra la tienda
+                showView(storeView);
             }
 
         } catch (error) {
