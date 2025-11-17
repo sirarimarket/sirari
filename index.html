@@ -139,14 +139,13 @@
                         <input type="text" id="customer-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="customer-location">Tu Ubicación (Dirección o link):</label>
-                        <button type="button" id="get-location-btn" class="secondary-btn" style="width:100%; margin: 5px 0 10px 0;">
-                            📍 Obtener ubicación actual
-                        </button>
+                        <label for="customer-location">Tu Dirección o Referencia:</label>
                         <textarea id="customer-location" rows="3" required></textarea>
                     </div>
-                    <button type="submit" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
-                </form>
+                    
+                    <p id="location-status" class="location-status-msg"></p> 
+                    <button type="submit" id="checkout-submit-btn" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
+                    </form>
             </div>
         </div>
 
