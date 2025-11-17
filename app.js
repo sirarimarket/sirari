@@ -3,19 +3,20 @@
 // =============================================
 // Pega tu URL y tu Llave "Publishable" (anon) aquí
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co';
-const SUPABASE_KEY = 'sb_publishable_X756WMLJdDeXPYHCXlZBOg_BZ0V3Inq';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA';
 
 // Si no sabes dónde están:
 // URL:  Settings > API > Project URL
 // KEY:  Settings > API > API Keys > Publishable key (la que dice 'anon')
 
 // Crea el cliente de Supabase
-const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+const { createClient }_supabase = supabase; // Renombrado para evitar conflictos
+const sb = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Selectores de Elementos (sin cambios)
+    // Selectores de Elementos
     const loginView = document.getElementById('login-view');
     const adminView = document.getElementById('admin-view');
     const storeView = document.getElementById('store-view');
@@ -66,11 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     let products = [];
     let categories = [];
-    let cart = JSON.parse(localStorage.getItem('sirari_cart')) || []; // El carrito SÍ se queda en localStorage
+    let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
     let imageDatacUrls = [];
     let currentCategoryFilter = 'todos';
 
-    // Función para guardar el carrito
     function saveCart() {
         localStorage.setItem('sirari_cart', JSON.stringify(cart));
         updateCartCount();
@@ -85,6 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
         viewToShow.classList.remove('hidden');
     }
     
+    // Estos listeners ahora funcionarán porque el HTML existe
     goToStoreBtn.addEventListener('click', () => showView(storeView));
     adminLoginBtn.addEventListener('click', () => showView(loginView));
     adminLogoutBtn.addEventListener('click', () => {
@@ -155,7 +156,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // CAMBIO: Habla con Supabase
     categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newName = categoryNameInput.value.trim().toLowerCase();
@@ -168,18 +168,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (editingId) {
-            // --- LÓGICA DE EDICIÓN ---
             const oldName = categories.find(c => c.id == editingId).name;
-            
-            // 1. Actualizar la categoría en sí
             const { error: catError } = await sb.from('categories').update({ name: newName }).eq('id', editingId);
             if (catError) {
                 console.error("Error al editar categoría:", catError);
                 return;
             }
             
-            // 2. Buscar y actualizar todos los productos con la categoría antigua
-            // (Esto es lento, pero replica tu lógica anterior. Mejor sería con "foreign keys" en la DB)
             const { data: productsToUpdate } = await sb.from('products').select('id').eq('category', oldName);
             const updatePromises = productsToUpdate.map(p => 
                 sb.from('products').update({ category: newName }).eq('id', p.id)
@@ -187,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
             await Promise.all(updatePromises);
             
         } else {
-            // --- LÓGICA DE CREACIÓN ---
             const { error } = await sb.from('categories').insert([{ name: newName }]);
             if (error) console.error("Error al crear categoría:", error);
         }
@@ -195,10 +189,9 @@ document.addEventListener('DOMContentLoaded', () => {
         categoryNameInput.value = '';
         categoryEditId.value = '';
         categorySaveBtn.textContent = 'Añadir';
-        await loadDataFromServer(); // Recarga todos los datos
+        await loadDataFromServer();
     });
 
-    // CAMBIO: Habla con Supabase
     categoryList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         const name = e.target.dataset.name;
@@ -213,17 +206,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar la categoría "${name}"?\nTodos sus productos se moverán a "otros".`)) {
                 
-                // 1. Mover productos a "otros"
                 const { data: productsToMove } = await sb.from('products').select('id').eq('category', name);
                 const updatePromises = productsToMove.map(p => 
                     sb.from('products').update({ category: 'otros' }).eq('id', p.id)
                 );
                 await Promise.all(updatePromises);
 
-                // 2. Eliminar la categoría
                 await sb.from('categories').delete().eq('id', id);
-
-                // 3. Recargar todo
                 await loadDataFromServer();
             }
         }
@@ -233,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //     LÓGICA DEL PANEL (ADMIN) - PRODUCTOS
     // =============================================
 
-    // Convertir imágenes a Base64 (sin cambios)
     productImages.addEventListener('change', (e) => {
         imagePreviewContainer.innerHTML = '';
         imageDatacUrls = [];
@@ -282,7 +270,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     cancelEditBtn.addEventListener('click', resetAdminForm);
 
-    // CAMBIO: Habla con Supabase
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -297,7 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        // Asume que tu tabla 'products' tiene una columna 'images' de tipo 'text[]' (array de texto)
         const productData = {
             title: productTitle.value,
             description: productDesc.value,
@@ -308,28 +294,22 @@ document.addEventListener('DOMContentLoaded', () => {
         let error = null;
 
         if (editingId) {
-            // --- LÓGICA DE ACTUALIZAR ---
             if (imageDatacUrls.length > 0) {
                 productData.images = imageDatacUrls;
             }
-            
             const { error: updateError } = await sb.from('products').update(productData).eq('id', editingId);
             error = updateError;
-
         } else {
-            // --- LÓGICA DE AÑADIR NUEVO ---
             productData.code = generateUniqueCode();
             productData.images = imageDatacUrls; 
-            
             const { error: insertError } = await sb.from('products').insert([productData]);
             error = insertError;
         }
 
-        // Manejo de errores (¡Importante!)
         if (error) {
             console.error("Error al guardar en Supabase:", error);
             if (error.message.includes('payload too large')) {
-                alert("Error: ¡Las imágenes son demasiado grandes! \nIntenta con menos imágenes o más pequeñas.\n(Este es el límite de Base64, no de Supabase Storage)");
+                alert("Error: ¡Las imágenes son demasiado grandes! \nIntenta con menos imágenes o más pequeñas.");
             } else {
                 alert("Error al guardar el producto.");
             }
@@ -340,13 +320,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     
-    // Dibuja la lista de productos en el panel de admin (sin cambios)
     function renderAdminProductList() {
         adminProductList.innerHTML = '';
         products.forEach(product => {
             const item = document.createElement('div');
             item.className = 'admin-product-item';
-            // Asegúrate de que 'images' sea un array y tenga al menos una imagen
             const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : 'placeholder.jpg';
             item.innerHTML = `
                 <img src="${imageUrl}" alt="${product.title}">
@@ -363,7 +341,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // CAMBIO: Habla con Supabase
     adminProductList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         if (!id) return;
@@ -398,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                 const { error } = await sb.from('products').delete().eq('id', id);
                 if (error) console.error("Error al eliminar:", error);
-                await loadDataFromServer(); // Recargar
+                await loadDataFromServer();
             }
         }
     });
@@ -499,24 +476,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
 
-        productDetailModal.innerHTML = `
-            <div class="modal-content" id="product-detail-content">
-                <button class="close-modal" id="close-detail-modal">&times;</button>
-                <div id="product-detail-gallery">
-                    <img src="${mainImageUrl}" id="gallery-main-image" alt="${product.title}">
-                    <div id="gallery-thumbnails">
-                        ${thumbnailsHTML}
-                    </div>
-                </div>
-                <div id="product-detail-info">
-                    <h2>${product.title}</h2>
-                    <p class="product-code">Código: ${product.code}</p>
-                    <p class="product-price">Bs. ${product.price.toFixed(2)}</p>
-                    <p class="product-category">Categoría: ${product.category}</p>
-                    <p class="product-full-description">${product.description}</p>
-                    <button class="primary-btn add-to-cart-btn-detail" data-id="${product.id}">Añadir al Carrito</button>
-                </div>
-            </div>`;
+        // Ahora solo actualizamos el CONTENIDO del modal, no el modal entero
+        productDetailContent.innerHTML = `
+            <button class="close-modal" id="close-detail-modal-inner">&times;</button>
+            <div id="product-detail-gallery">
+                <img src="${mainImageUrl}" id="gallery-main-image" alt="${product.title}">
+                <div id="gallery-thumbnails">${thumbnailsHTML}</div>
+            </div>
+            <div id="product-detail-info">
+                <h2>${product.title}</h2>
+                <p class="product-code">Código: ${product.code}</p>
+                <p class="product-price">Bs. ${product.price.toFixed(2)}</p>
+                <p class="product-category">Categoría: ${product.category}</p>
+                <p class="product-full-description">${product.description}</p>
+                <button class="primary-btn add-to-cart-btn-detail" data-id="${product.id}">Añadir al Carrito</button>
+            </div>
+        `;
         productDetailModal.classList.remove('hidden');
 
         const mainImage = document.getElementById('gallery-main-image');
@@ -530,7 +505,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        document.getElementById('close-detail-modal').addEventListener('click', () => {
+        document.getElementById('close-detail-modal-inner').addEventListener('click', () => {
             productDetailModal.classList.add('hidden');
         });
         document.querySelector('.add-to-cart-btn-detail').addEventListener('click', (e) => {
@@ -546,7 +521,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =============================================
-    //           LÓGICA DEL CARRITO (SIN CAMBIOS)
+    //           LÓGICA DEL CARRITO
     // =============================================
 
     function addToCart(productId) {
@@ -577,31 +552,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCart() {
-        cartModal.innerHTML = `
-            <div class="modal-content cart-modal-content">
-                <button class="close-modal" id="close-cart-modal">&times;</button>
-                <h2>Tu Carrito</h2>
-                <div id="cart-items"></div>
-                <hr>
-                <div class="cart-total">
-                    <strong>Total: Bs. <span id="cart-total">0.00</span></strong>
-                </div>
-                <button id="checkout-btn" class="primary-btn" disabled>Enviar Pedido</button>
-            </div>`;
-        
-        const cartItemsEl = document.getElementById('cart-items');
-        const cartTotalEl = document.getElementById('cart-total');
-        const checkoutBtnEl = document.getElementById('checkout-btn');
-
+        // Ahora solo actualizamos el CONTENIDO del modal de carrito
         let total = 0;
         if (cart.length === 0) {
-            cartItemsEl.innerHTML = '<p>Tu carrito está vacío.</p>';
-            checkoutBtnEl.disabled = true;
+            cartItems.innerHTML = '<p>Tu carrito está vacío.</p>';
+            checkoutBtn.disabled = true;
         } else {
+            cartItems.innerHTML = ''; // Limpiar solo los items
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
-                cartItemsEl.innerHTML += `
+                cartItems.innerHTML += `
                     <div class="cart-item">
                         <img src="${item.image}" alt="${item.title}">
                         <div class="cart-item-info">
@@ -612,16 +573,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             });
-            checkoutBtnEl.disabled = false;
+            checkoutBtn.disabled = false;
         }
-        cartTotalEl.textContent = total.toFixed(2);
+        cartTotal.textContent = total.toFixed(2);
         updateCartCount();
-
-        // Re-asignar listeners para el modal de carrito
-        document.getElementById('close-cart-modal').addEventListener('click', () => cartModal.classList.add('hidden'));
-        document.getElementById('checkout-btn').addEventListener('click', () => { cartModal.classList.add('hidden'); checkoutModal.classList.remove('hidden'); });
-        cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
-        cartItemsEl.addEventListener('click', (e) => { if (e.target.classList.contains('cart-item-remove')) { removeFromCart(e.target.dataset.id); }});
     }
     
     function updateCartCount() {
@@ -630,29 +585,23 @@ document.addEventListener('DOMContentLoaded', () => {
         cartCount.style.display = totalItems > 0 ? 'block' : 'none';
     }
 
+    // Listeners para los modales (ahora funcionan porque el HTML existe)
     cartBtn.addEventListener('click', () => { renderCart(); cartModal.classList.remove('hidden'); });
-    
-    // =============================================
-    //           LÓGICA DE CHECKOUT (SIN CAMBIOS)
-    // =============================================
-    
-    checkoutModal.innerHTML = `
-        <div class="modal-content">
-            <button class="close-modal" id="close-checkout-modal">&times;</button>
-            <h2>Datos de Envío</h2>
-            <form id="checkout-form">
-                <div class="form-group"><label for="customer-name">Nombre Completo:</label><input type="text" id="customer-name" required></div>
-                <div class="form-group"><label for="customer-location">Tu Ubicación:</label><textarea id="customer-location" rows="3" required></textarea></div>
-                <button type="submit" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
-            </form>
-        </div>`;
-    
-    document.getElementById('close-checkout-modal').addEventListener('click', () => checkoutModal.classList.add('hidden'));
+    closeCartModal.addEventListener('click', () => cartModal.classList.add('hidden'));
+    cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
+    cartItems.addEventListener('click', (e) => { if (e.target.classList.contains('cart-item-remove')) { removeFromCart(e.target.dataset.id); }});
+    checkoutBtn.addEventListener('click', () => { cartModal.classList.add('hidden'); checkoutModal.classList.remove('hidden'); });
+    closeCheckoutModal.addEventListener('click', () => checkoutModal.classList.add('hidden'));
     checkoutModal.addEventListener('click', (e) => { if (e.target === checkoutModal) checkoutModal.classList.add('hidden'); });
-    document.getElementById('checkout-form').addEventListener('submit', (e) => {
+
+    // =============================================
+    //           LÓGICA DE CHECKOUT
+    // =============================================
+    
+    checkoutForm.addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = document.getElementById('customer-name').value;
-        const location = document.getElementById('customer-location').value;
+        const name = customerName.value;
+        const location = customerLocation.value;
         const tuNumeroWhatsapp = '591XXXXXXXX'; 
         
         if (tuNumeroWhatsapp === '591XXXXXXXX') {
@@ -678,13 +627,13 @@ document.addEventListener('DOMContentLoaded', () => {
         mensaje += `\n*-----------------------------------*\n`;
         mensaje += `*TOTAL A PAGAR: Bs. ${granTotal.toFixed(2)}*`;
 
-        const urlWhatsApp = `httpshttps://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
+        const urlWhatsApp = `https://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
         window.open(urlWhatsApp, '_blank');
         
         cart = [];
         saveCart();
         renderCart();
-        document.getElementById('checkout-form').reset();
+        checkoutForm.reset();
         checkoutModal.classList.add('hidden');
     });
 
@@ -692,16 +641,13 @@ document.addEventListener('DOMContentLoaded', () => {
     //           INICIALIZACIÓN DE LA APP
     // =============================================
     
-    // CAMBIO: Carga los datos desde Supabase al iniciar
     async function loadDataFromServer() {
-        // Verifica si la conexión está lista
         if (SUPABASE_URL === 'URL_DE_TU_PROYECTO_SUPABASE' || SUPABASE_KEY === 'TU_LLAVE_PUBLISHABLE_ANON') {
             document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong> y añade tu URL y Key de Supabase en las líneas 5 y 6.</p>`;
             return;
         }
 
         try {
-            // Pide los productos Y las categorías al mismo tiempo
             const { data: categoriesData, error: catError } = await sb.from('categories').select('*');
             const { data: productsData, error: prodError } = await sb.from('products').select('*').order('id', { ascending: false });
 
@@ -711,7 +657,6 @@ document.addEventListener('DOMContentLoaded', () => {
             products = productsData;
             categories = categoriesData;
             
-            // Ahora que tenemos los datos, dibujamos la página
             refreshStoreUI();
             updateCartCount();
             
@@ -728,7 +673,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    loadDataFromServer(); // ¡Inicia la aplicación!
+    loadDataFromServer();
 
 });
-
