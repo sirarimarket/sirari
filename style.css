@@ -594,3 +594,16 @@ button:active {
 #checkout-btn {
     width: 100%;
 }
+
+/* =================================== */
+/* NUEVA CLASE PARA MENSAJE DE UBICACIÓN */
+/* =Example (agregado) */
+/* =================================== */
+.location-status-msg {
+    font-size: 0.9rem;
+    color: var(--color-gris-texto);
+    text-align: center;
+    margin-bottom: 1rem;
+    /* Le damos altura fija para que la UI no "salte" */
+    height: 1.2em; 
+}
