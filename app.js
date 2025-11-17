@@ -2,16 +2,17 @@
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
 // Pega tu URL y tu Llave "Publishable" (anon) aquí
-const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA';
+const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // (Asegúrate que esto esté bien)
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // (Asegúrate que esto esté bien)
 
-// Si no sabes dónde están:
-// URL:  Settings > API > Project URL
-// KEY:  Settings > API > API Keys > Publishable key (la que dice 'anon')
+// =============================================
+//         CAMBIO IMPORTANTE AQUÍ
+// =============================================
 
 // Crea el cliente de Supabase
-const { createClient }_supabase = supabase; // Renombrado para evitar conflictos
-const sb = _supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// (Esta era la línea con el error, ahora está corregida)
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -85,7 +86,7 @@ document.addEventListener('DOMContentLoaded', () => {
         viewToShow.classList.remove('hidden');
     }
     
-    // Estos listeners ahora funcionarán porque el HTML existe
+    // Estos botones ahora funcionarán porque el script no se rompe
     goToStoreBtn.addEventListener('click', () => showView(storeView));
     adminLoginBtn.addEventListener('click', () => showView(loginView));
     adminLogoutBtn.addEventListener('click', () => {
@@ -110,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //       LÓGICA DEL PANEL (ADMIN) - General
     // =============================================
+    // (El resto del código es idéntico al anterior y está bien)
 
     function refreshAdminUI() {
         renderCategoryList();
@@ -476,7 +478,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
 
-        // Ahora solo actualizamos el CONTENIDO del modal, no el modal entero
         productDetailContent.innerHTML = `
             <button class="close-modal" id="close-detail-modal-inner">&times;</button>
             <div id="product-detail-gallery">
@@ -552,13 +553,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCart() {
-        // Ahora solo actualizamos el CONTENIDO del modal de carrito
         let total = 0;
         if (cart.length === 0) {
             cartItems.innerHTML = '<p>Tu carrito está vacío.</p>';
             checkoutBtn.disabled = true;
         } else {
-            cartItems.innerHTML = ''; // Limpiar solo los items
+            cartItems.innerHTML = '';
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
@@ -585,7 +585,6 @@ document.addEventListener('DOMContentLoaded', () => {
         cartCount.style.display = totalItems > 0 ? 'block' : 'none';
     }
 
-    // Listeners para los modales (ahora funcionan porque el HTML existe)
     cartBtn.addEventListener('click', () => { renderCart(); cartModal.classList.remove('hidden'); });
     closeCartModal.addEventListener('click', () => cartModal.classList.add('hidden'));
     cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
@@ -660,11 +659,12 @@ document.addEventListener('DOMContentLoaded', () => {
             refreshStoreUI();
             updateCartCount();
             
+            // Esta es la lógica que controla qué vista se muestra al cargar
             if (sessionStorage.getItem('sirari_admin_logged_in') === 'true') {
-                showView(adminView);
+                showView(adminView); // Si estás logueado, muestra el admin
                 refreshAdminUI();
             } else {
-                showView(storeView);
+                showView(storeView); // Si no, muestra la tienda
             }
 
         } catch (error) {
