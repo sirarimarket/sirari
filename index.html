@@ -9,6 +9,87 @@
 </head>
 <body>
 
+    <section id="login-view" class="view">
+        <div class="login-container">
+            <h1>SIRARI - Admin</h1>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Usuario" required>
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+            <p id="login-error" class="error-msg"></p>
+            <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
+        </div>
+    </section>
+
+    <section id="admin-view" class="view hidden">
+        <header class="admin-header">
+            <h1>Panel de Administración de SIRARI</h1>
+            <button id="admin-logout-btn">Cerrar Sesión</button>
+        </header>
+        
+        <div class="admin-container">
+            <section id="category-management-section">
+                <h2>Gestionar Categorías</h2>
+                <form id="category-form">
+                    <input type="hidden" id="category-edit-id">
+                    <div class="form-group category-form-inline">
+                        <input type="text" id="category-name-input" placeholder="Nombre de la categoría" required>
+                        <button type="submit" id="category-save-btn" class="primary-btn">Añadir</button>
+                    </div>
+                </form>
+                <div id="category-list"></div>
+            </section>
+
+            <hr class="section-divider">
+
+            <section id="product-management-section">
+                <h2 id="admin-form-title">Añadir Nuevo Producto</h2>
+                <form id="add-product-form">
+                    <input type="hidden" id="product-edit-id">
+                    
+                    <div class="form-group">
+                        <label for="product-title">Título del Producto:</label>
+                        <input type="text" id="product-title" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-desc">Descripción del Producto:</label>
+                        <textarea id="product-desc" required></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="product-price">Precio (Bs.):</label>
+                        <input type="number" id="product-price" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-images">Fotos del Producto (Máx. 10):</label>
+                        <input type="file" id="product-images" accept="image/*" multiple>
+                        <div id="image-preview-container"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-category">Categoría:</label>
+                        <select id="product-category" required></select>
+                    </div>
+                    
+                    <div class="admin-form-actions">
+                        <button type="submit" id="save-product-btn" class="primary-btn">Guardar Producto</button>
+                        <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancelar Edición</button>
+                    </div>
+                </form>
+            </section>
+            
+            <hr class="section-divider">
+            
+            <section id="product-list-section">
+                <h2>Gestionar Productos</h2>
+                <div id="admin-product-list"></div>
+            </section>
+        </div>
+    </section>
+
     <section id="store-view" class="view hidden">
         <header class="store-header">
             <h1 class="logo">SIRARI</h1>
@@ -27,18 +108,47 @@
         </header>
 
         <nav id="category-filters"></nav>
-         <main id="product-grid" class="product-grid"></main>
 
-        <div id="product-detail-modal" class="modal hidden"></div>
-        <div id="cart-modal" class="modal hidden"></div>
-        <div id="checkout-modal" class="modal hidden"></div>
+        <main id="product-grid" class="product-grid"></main>
+
+        <div id="product-detail-modal" class="modal hidden">
+            <div class="modal-content" id="product-detail-content">
+                </div>
+        </div>
+        
+        <div id="cart-modal" class="modal hidden">
+            <div class="modal-content cart-modal-content">
+                <button class="close-modal" id="close-cart-modal">&times;</button>
+                <h2>Tu Carrito</h2>
+                <div id="cart-items"></div>
+                <hr>
+                <div class="cart-total">
+                    <strong>Total: Bs. <span id="cart-total">0.00</span></strong>
+                </div>
+                <button id="checkout-btn" class="primary-btn" disabled>Enviar Pedido</button>
+            </div>
+        </div>
+
+        <div id="checkout-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="close-modal" id="close-checkout-modal">&times;</button>
+                <h2>Datos de Envío</h2>
+                <form id="checkout-form">
+                    <div class="form-group">
+                        <label for="customer-name">Nombre Completo:</label>
+                        <input type="text" id="customer-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="customer-location">Tu Ubicación (Dirección o link de Google Maps):</label>
+                        <textarea id="customer-location" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
+                </form>
+            </div>
+        </div>
+
     </section>
-
-    <section id="login-view" class="view">
-        </section>
-    <section id="admin-view" class="view hidden">
-        </section>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
