@@ -3,7 +3,7 @@
 // =============================================
 // Pega tu URL y tu Llave "Publishable" (anon) aquí
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA';
+const SUPABASE_KEY = 'sb_publishable_X756WMLJdDeXPYHCXlZBOg_BZ0V3Inq';
 
 // Si no sabes dónde están:
 // URL:  Settings > API > Project URL
@@ -731,3 +731,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataFromServer(); // ¡Inicia la aplicación!
 
 });
+
