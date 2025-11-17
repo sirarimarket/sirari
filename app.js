@@ -4,6 +4,12 @@
 // Pega tu URL y tu Llave "Publishable" (anon) aquí
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // (Asegúrate que esto esté bien)
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // (Asegúrate que esto esté bien)
+// =============================================
+//         ¡CONFIGURACIÓN DE SUPABASE!
+// =============================================
+// Pega tu URL y tu Llave "Publishable" (anon) aquí
+//const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE';
+//const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON';
 
 // Crea el cliente de Supabase
 const { createClient } = supabase;
@@ -58,11 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const productDetailModal = document.getElementById('product-detail-modal');
     const productDetailContent = document.getElementById('product-detail-content');
     
-    // ================== -->
-    //   SELECTOR NUEVO   -->
-    // ================== -->
-    const getLocationBtn = document.getElementById('get-location-btn');
-
+    // ===================================
+    // NUEVOS SELECTORES PARA CHECKOUT
+    // ===================================
+    const checkoutSubmitBtn = document.getElementById('checkout-submit-btn');
+    const locationStatus = document.getElementById('location-status');
 
     // =============================================
     //         VARIABLES GLOBALES
@@ -111,6 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //       LÓGICA DEL PANEL (ADMIN) - General
     // =============================================
+
     function refreshAdminUI() {
         renderCategoryList();
         loadCategoriesIntoSelect();
@@ -125,7 +132,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //     LÓGICA DEL PANEL (ADMIN) - CATEGORÍAS
     // =============================================
-
+    
+    // ... (El código de categorías no cambia) ...
     function renderCategoryList() {
         categoryList.innerHTML = '';
         categories.forEach(cat => {
@@ -145,7 +153,6 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryList.appendChild(item);
         });
     }
-
     function loadCategoriesIntoSelect() {
         productCategory.innerHTML = '<option value="" disabled selected>Selecciona una categoría</option>';
         categories.forEach(cat => {
@@ -155,63 +162,45 @@ document.addEventListener('DOMContentLoaded', () => {
             productCategory.appendChild(option);
         });
     }
-
     categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newName = categoryNameInput.value.trim().toLowerCase();
         const editingId = categoryEditId.value;
-        
         if (!newName) return;
         if (categories.find(c => c.name === newName && c.id != editingId)) {
             alert('Esa categoría ya existe.');
             return;
         }
-
         if (editingId) {
             const oldName = categories.find(c => c.id == editingId).name;
             const { error: catError } = await sb.from('categories').update({ name: newName }).eq('id', editingId);
-            if (catError) {
-                console.error("Error al editar categoría:", catError);
-                return;
-            }
-            
+            if (catError) { console.error("Error al editar categoría:", catError); return; }
             const { data: productsToUpdate } = await sb.from('products').select('id').eq('category', oldName);
-            const updatePromises = productsToUpdate.map(p => 
-                sb.from('products').update({ category: newName }).eq('id', p.id)
-            );
+            const updatePromises = productsToUpdate.map(p => sb.from('products').update({ category: newName }).eq('id', p.id));
             await Promise.all(updatePromises);
-            
         } else {
             const { error } = await sb.from('categories').insert([{ name: newName }]);
             if (error) console.error("Error al crear categoría:", error);
         }
-
         categoryNameInput.value = '';
         categoryEditId.value = '';
         categorySaveBtn.textContent = 'Añadir';
         await loadDataFromServer();
     });
-
     categoryList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         const name = e.target.dataset.name;
         if (!id) return;
-
         if (e.target.classList.contains('edit-btn')) {
             categoryNameInput.value = name;
             categoryEditId.value = id;
             categorySaveBtn.textContent = 'Actualizar';
             categoryNameInput.focus();
-        
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar la categoría "${name}"?\nTodos sus productos se moverán a "otros".`)) {
-                
                 const { data: productsToMove } = await sb.from('products').select('id').eq('category', name);
-                const updatePromises = productsToMove.map(p => 
-                    sb.from('products').update({ category: 'otros' }).eq('id', p.id)
-                );
+                const updatePromises = productsToMove.map(p => sb.from('products').update({ category: 'otros' }).eq('id', p.id));
                 await Promise.all(updatePromises);
-
                 await sb.from('categories').delete().eq('id', id);
                 await loadDataFromServer();
             }
@@ -221,13 +210,13 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //     LÓGICA DEL PANEL (ADMIN) - PRODUCTOS
     // =============================================
-
+    
+    // ... (El código de productos no cambia) ...
     productImages.addEventListener('change', (e) => {
         imagePreviewContainer.innerHTML = '';
         imageDatacUrls = [];
         const files = Array.from(e.target.files).slice(0, 10);
         if (files.length === 0) return;
-
         const readPromises = files.map(file => {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -236,7 +225,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 reader.readAsDataURL(file);
             });
         });
-
         Promise.all(readPromises)
             .then(urls => {
                 imageDatacUrls = urls;
@@ -249,7 +237,6 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(error => console.error("Error al leer imágenes:", error));
     });
-
     function generateUniqueCode() {
         let code;
         do {
@@ -257,7 +244,6 @@ document.addEventListener('DOMContentLoaded', () => {
         } while (products.find(p => p.code === code));
         return code;
     }
-    
     function resetAdminForm() {
         addProductForm.reset();
         imagePreviewContainer.innerHTML = '';
@@ -267,14 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
         saveProductBtn.textContent = 'Guardar Producto';
         cancelEditBtn.classList.add('hidden');
     }
-    
     cancelEditBtn.addEventListener('click', resetAdminForm);
-
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
         const editingId = productEditId.value;
-        
         if (!editingId && imageDatacUrls.length === 0) {
             alert('Por favor, sube al menos una imagen para el nuevo producto.');
             return;
@@ -283,16 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Por favor, selecciona una categoría.');
             return;
         }
-        
         const productData = {
             title: productTitle.value,
             description: productDesc.value,
             price: parseFloat(productPrice.value),
             category: productCategory.value
         };
-
         let error = null;
-
         if (editingId) {
             if (imageDatacUrls.length > 0) {
                 productData.images = imageDatacUrls;
@@ -305,7 +284,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const { error: insertError } = await sb.from('products').insert([productData]);
             error = insertError;
         }
-
         if (error) {
             console.error("Error al guardar en Supabase:", error);
             if (error.message.includes('payload too large')) {
@@ -319,7 +297,6 @@ document.addEventListener('DOMContentLoaded', () => {
             resetAdminForm();
         }
     });
-    
     function renderAdminProductList() {
         adminProductList.innerHTML = '';
         products.forEach(product => {
@@ -340,21 +317,17 @@ document.addEventListener('DOMContentLoaded', () => {
             adminProductList.appendChild(item);
         });
     }
-    
     adminProductList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         if (!id) return;
-
         if (e.target.classList.contains('edit-btn')) {
             const product = products.find(p => p.id == id);
             if (!product) return;
-            
             productEditId.value = product.id;
             productTitle.value = product.title;
             productDesc.value = product.description;
             productPrice.value = product.price;
             productCategory.value = product.category;
-            
             imagePreviewContainer.innerHTML = '';
             if (product.images && product.images.length > 0) {
                 product.images.forEach(url => {
@@ -365,12 +338,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
             imageDatacUrls = [];
-            
             adminFormTitle.textContent = 'Editando Producto';
             saveProductBtn.textContent = 'Actualizar Producto';
             cancelEditBtn.classList.remove('hidden');
             adminView.scrollTo({ top: 0, behavior: 'smooth' });
-        
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                 const { error } = await sb.from('products').delete().eq('id', id);
@@ -380,10 +351,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+
     // =============================================
     //         LÓGICA DE LA TIENDA (USUARIO)
     // =============================================
-
+    
+    // ... (El código de la tienda no cambia) ...
     function renderCategoryFilters() {
         categoryFilters.innerHTML = '';
         const allBtn = document.createElement('button');
@@ -391,7 +364,6 @@ document.addEventListener('DOMContentLoaded', () => {
         allBtn.textContent = 'Ver Todos';
         allBtn.dataset.category = 'todos';
         categoryFilters.appendChild(allBtn);
-
         categories.forEach(cat => {
             const btn = document.createElement('button');
             btn.className = 'category-filter-btn';
@@ -399,7 +371,6 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.dataset.category = cat.name;
             categoryFilters.appendChild(btn);
         });
-
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
@@ -409,35 +380,26 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
-
     function renderProducts() {
         productGrid.innerHTML = '';
         const searchTerm = searchInput.value.toLowerCase().trim();
-
-        const categoryFiltered = products.filter(p => 
-            currentCategoryFilter === 'todos' || p.category === currentCategoryFilter
-        );
-
+        const categoryFiltered = products.filter(p => currentCategoryFilter === 'todos' || p.category === currentCategoryFilter);
         const finalFiltered = categoryFiltered.filter(p => 
             (p.title && p.title.toLowerCase().includes(searchTerm)) ||
             (p.description && p.description.toLowerCase().includes(searchTerm)) || 
             (p.code && p.code.toLowerCase().includes(searchTerm))
         );
-
         if (finalFiltered.length === 0) {
             productGrid.innerHTML = '<p class="no-products">No se encontraron productos.</p>';
             return;
         }
-
         finalFiltered.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
             card.dataset.id = product.id; 
             const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
             card.innerHTML = `
-                <div class="product-image-container">
-                    <img src="${imageUrl}" alt="${product.title}" class="product-image">
-                </div>
+                <div class="product-image-container"><img src="${imageUrl}" alt="${product.title}" class="product-image"></div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <p class="product-desc-snippet">${product.description}</p>
@@ -449,25 +411,20 @@ document.addEventListener('DOMContentLoaded', () => {
             productGrid.appendChild(card);
         });
     }
-
     searchInput.addEventListener('input', renderProducts);
-
     productGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.product-card');
         if (!card) return;
         const productId = card.dataset.id;
-        
         if (e.target.classList.contains('add-to-cart-btn')) {
             addToCart(productId);
         } else if (e.target.closest('.product-image-container')) {
             showProductDetail(productId);
         }
     });
-    
     function showProductDetail(productId) {
         const product = products.find(p => p.id == productId);
         if (!product) return;
-
         let thumbnailsHTML = '';
         if (product.images && product.images.length > 0) {
             product.images.forEach((img, index) => {
@@ -475,7 +432,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
-
         productDetailContent.innerHTML = `
             <button class="close-modal" id="close-detail-modal-inner">&times;</button>
             <div id="product-detail-gallery">
@@ -492,10 +448,8 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         productDetailModal.classList.remove('hidden');
-
         const mainImage = document.getElementById('gallery-main-image');
         const thumbnails = document.querySelectorAll('.gallery-thumbnail');
-        
         thumbnails.forEach(thumb => {
             thumb.addEventListener('click', () => {
                 mainImage.src = product.images[thumb.dataset.index];
@@ -503,7 +457,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 thumb.classList.add('active');
             });
         });
-
         document.getElementById('close-detail-modal-inner').addEventListener('click', () => {
             productDetailModal.classList.add('hidden');
         });
@@ -512,7 +465,6 @@ document.addEventListener('DOMContentLoaded', () => {
             productDetailModal.classList.add('hidden');
         });
     }
-    
     productDetailModal.addEventListener('click', (e) => {
         if (e.target === productDetailModal) {
             productDetailModal.classList.add('hidden');
@@ -522,7 +474,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //           LÓGICA DEL CARRITO
     // =============================================
-
+    
+    // ... (El código del carrito no cambia) ...
     function addToCart(productId) {
         const existingItem = cart.find(item => item.id == productId);
         if (existingItem) {
@@ -543,13 +496,11 @@ document.addEventListener('DOMContentLoaded', () => {
         saveCart();
         renderCart();
     }
-    
     function removeFromCart(productId) {
         cart = cart.filter(item => item.id != productId);
         saveCart();
         renderCart();
     }
-
     function renderCart() {
         let total = 0;
         if (cart.length === 0) {
@@ -576,13 +527,11 @@ document.addEventListener('DOMContentLoaded', () => {
         cartTotal.textContent = total.toFixed(2);
         updateCartCount();
     }
-    
     function updateCartCount() {
         const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
         cartCount.textContent = totalItems;
         cartCount.style.display = totalItems > 0 ? 'block' : 'none';
     }
-
     cartBtn.addEventListener('click', () => { renderCart(); cartModal.classList.remove('hidden'); });
     closeCartModal.addEventListener('click', () => cartModal.classList.add('hidden'));
     cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
@@ -595,71 +544,62 @@ document.addEventListener('DOMContentLoaded', () => {
     //           LÓGICA DE CHECKOUT
     // =============================================
     
-    // ================== -->
-    // LÓGICA GPS AÑADIDA -->
-    // ================== -->
-    getLocationBtn.addEventListener('click', () => {
-        if (navigator.geolocation) {
-            getLocationBtn.disabled = true;
-            getLocationBtn.textContent = 'Buscando...';
+    // Función auxiliar para "prometer" la geolocalización
+    const getLocation = () => {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error('Geolocalización no soportada.'));
+            }
+            // Tiempo límite de 10 segundos
+            navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000 });
+        });
+    };
 
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    // Éxito
-                    const lat = position.coords.latitude;
-                    const long = position.coords.longitude;
-                    const mapLink = `https://www.google.com/maps?q=${lat},${long}`;
-                    
-                    // Pega el link en el campo de texto
-                    customerLocation.value = mapLink; 
-                    
-                    getLocationBtn.disabled = false;
-                    getLocationBtn.textContent = '📍 Obtener ubicación actual';
-                },
-                (error) => {
-                    // Manejo de errores
-                    console.error("Error al obtener ubicación:", error);
-                    let errorMsg = 'No se pudo obtener la ubicación. ';
-                    switch(error.code) {
-                        case error.PERMISSION_DENIED:
-                            errorMsg += "Permiso denegado. Escríbela manualmente.";
-                            break;
-                        case error.POSITION_UNAVAILABLE:
-                            errorMsg += "Información de ubicación no disponible.";
-                            break;
-                        case error.TIMEOUT:
-                            errorMsg += "Se agotó el tiempo de espera.";
-                            break;
-                        default:
-                            errorMsg += "Un error desconocido ocurrió.";
-                    }
-                    alert(errorMsg);
-                    
-                    getLocationBtn.disabled = false;
-                    getLocationBtn.textContent = '📍 Obtener ubicación actual';
-                }
-            );
-        } else {
-            alert('Tu navegador no soporta geolocalización.');
-        }
-    });
-
-    // Esta función de envío de WhatsApp NO NECESITA CAMBIOS.
-    // Ya toma el valor de 'customerLocation', que ahora contendrá el link.
-    checkoutForm.addEventListener('submit', (e) => {
+    // ===================================
+    // LÓGICA DE CHECKOUT (COMPLETAMENTE REESCRITA)
+    // ===================================
+    checkoutForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        const name = customerName.value;
-        const location = customerLocation.value; // ¡Aquí ya viene el link si usaron el botón!
-        const tuNumeroWhatsapp = '59173164833'; 
         
-        if (tuNumeroWhatsapp === '59173164833') {
-            alert('Error: Debes configurar tu número de WhatsApp en el archivo app.js.');
-            return;
-        }
+        // 1. Mostrar estado de carga
+        checkoutSubmitBtn.disabled = true;
+        checkoutSubmitBtn.textContent = 'Procesando...';
+        locationStatus.textContent = 'Obteniendo ubicación, por favor espera...';
 
+        const name = customerName.value;
+        const locationReference = customerLocation.value; // Renombrada para claridad
+        const tuNumeroWhatsapp = '59173164833'; // NÚMERO ACTUALIZADO
+        
+        let locationLink = '';
+        let locationError = false;
+
+        try {
+            // 2. Intentar obtener la ubicación
+            const position = await getLocation();
+            const { latitude, longitude } = position.coords;
+            locationLink = `https://maps.google.com/?q=${latitude},${longitude}`;
+            locationStatus.textContent = '¡Ubicación obtenida!';
+
+        } catch (error) {
+            // 3. Manejar error si el usuario rechaza o falla
+            locationError = true;
+            console.warn("Error al obtener ubicación:", error.message);
+            locationStatus.textContent = 'No se pudo obtener ubicación exacta.';
+        }
+        
+        // 4. Construir el mensaje de WhatsApp
         let mensaje = `*¡Nuevo Pedido de SIRARI!* 🛍️\n\n`;
-        mensaje += `*A nombre de:* ${name}\n`;
-        mensaje += `*Ubicación/Dirección:* ${location}\n\n`;
+        mensaje += `*A nombre de:* ${name}\n\n`;
+        
+        // 5. Añadir la ubicación (link GPS o referencia)
+        mensaje += `*--- UBICACIÓN ---*\n`;
+        mensaje += `*Referencia Escrita:* ${locationReference}\n`;
+        if (locationError) {
+            mensaje += `*Ubicación GPS:* No se pudo obtener.\n\n`;
+        } else {
+            mensaje += `*Link GPS (Exacto):* ${locationLink}\n\n`;
+        }
+        
         mensaje += `*--- DETALLE DEL PEDIDO ---*\n`;
 
         let granTotal = 0;
@@ -672,17 +612,25 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje += `*Cantidad:* ${item.quantity}\n`;
             mensaje += `*Subtotal:* Bs. ${totalItem.toFixed(2)}\n`;
         });
+
         mensaje += `\n*-----------------------------------*\n`;
         mensaje += `*TOTAL A PAGAR: Bs. ${granTotal.toFixed(2)}*`;
 
+        // 6. Abrir WhatsApp
         const urlWhatsApp = `https://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
         window.open(urlWhatsApp, '_blank');
         
+        // 7. Resetear todo
         cart = [];
         saveCart();
         renderCart();
         checkoutForm.reset();
         checkoutModal.classList.add('hidden');
+        
+        // Restablecer el botón y el mensaje de estado
+        checkoutSubmitBtn.disabled = false;
+        checkoutSubmitBtn.textContent = 'Confirmar y Enviar por WhatsApp';
+        locationStatus.textContent = '';
     });
 
     // =============================================
@@ -724,4 +672,3 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataFromServer();
 
 });
-
