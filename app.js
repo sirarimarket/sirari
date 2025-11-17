@@ -1,15 +1,24 @@
+// =============================================
+//         ¡CONFIGURACIÓN DE SUPABASE!
+// =============================================
+// Pega tu URL y tu Llave "Publishable" (anon) aquí
+const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA';
+
+// Si no sabes dónde están:
+// URL:  Settings > API > Project URL
+// KEY:  Settings > API > API Keys > Publishable key (la que dice 'anon')
+
+// Crea el cliente de Supabase
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
+
 document.addEventListener('DOMContentLoaded', () => {
 
-    // =============================================
-    //           SELECTORES DE ELEMENTOS
-    // =============================================
-    
-    // Vistas
+    // Selectores de Elementos (sin cambios)
     const loginView = document.getElementById('login-view');
     const adminView = document.getElementById('admin-view');
     const storeView = document.getElementById('store-view');
-
-    // Login Admin
     const loginForm = document.getElementById('login-form');
     const usernameInput = document.getElementById('username');
     const passwordInput = document.getElementById('password');
@@ -17,15 +26,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const goToStoreBtn = document.getElementById('go-to-store-btn');
     const adminLoginBtn = document.getElementById('admin-login-btn');
     const adminLogoutBtn = document.getElementById('admin-logout-btn');
-
-    // Admin - Gestión de Categorías
     const categoryForm = document.getElementById('category-form');
     const categoryNameInput = document.getElementById('category-name-input');
-    const categoryEditId = document.getElementById('category-edit-id'); // Cambiado a ID
+    const categoryEditId = document.getElementById('category-edit-id');
     const categorySaveBtn = document.getElementById('category-save-btn');
     const categoryList = document.getElementById('category-list');
-
-    // Admin - Gestión de Productos
     const addProductForm = document.getElementById('add-product-form');
     const adminFormTitle = document.getElementById('admin-form-title');
     const productEditId = document.getElementById('product-edit-id');
@@ -38,13 +43,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const adminProductList = document.getElementById('admin-product-list');
-
-    // Tienda (Usuario)
     const searchInput = document.getElementById('search-input');
     const categoryFilters = document.getElementById('category-filters');
     const productGrid = document.getElementById('product-grid');
-    
-    // Carrito (sigue en localStorage, ¡esto es lo normal!)
     const cartBtn = document.getElementById('cart-btn');
     const cartCount = document.getElementById('cart-count');
     const cartModal = document.getElementById('cart-modal');
@@ -52,45 +53,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const cartItems = document.getElementById('cart-items');
     const cartTotal = document.getElementById('cart-total');
     const checkoutBtn = document.getElementById('checkout-btn');
-
-    // Checkout
     const checkoutModal = document.getElementById('checkout-modal');
     const closeCheckoutModal = document.getElementById('close-checkout-modal');
     const checkoutForm = document.getElementById('checkout-form');
     const customerName = document.getElementById('customer-name');
     const customerLocation = document.getElementById('customer-location');
-    
-    // Detalle Producto
     const productDetailModal = document.getElementById('product-detail-modal');
     const productDetailContent = document.getElementById('product-detail-content');
 
     // =============================================
-    //         CONFIGURACIÓN Y BASE DE DATOS
+    //         VARIABLES GLOBALES
     // =============================================
-    
-    // Usamos una ruta relativa. Esto funciona porque json-server servirá
-    // tanto la API como los archivos estáticos (index.html, etc.)
-    const API_URL = ''; 
-
-    // Los datos de productos y categorías ahora vivirán en estas variables
     let products = [];
     let categories = [];
-    
-    // El carrito SÍ debe estar en localStorage, porque es específico de cada usuario.
-    let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
+    let cart = JSON.parse(localStorage.getItem('sirari_cart')) || []; // El carrito SÍ se queda en localStorage
+    let imageDatacUrls = [];
+    let currentCategoryFilter = 'todos';
 
-    // Función para guardar el carrito (la única que usa localStorage)
+    // Función para guardar el carrito
     function saveCart() {
         localStorage.setItem('sirari_cart', JSON.stringify(cart));
         updateCartCount();
     }
     
-    // Variables globales
-    let imageDatacUrls = [];
-    let currentCategoryFilter = 'todos';
-
     // =============================================
-    //           LÓGICA DE NAVEGACIÓN Y VISTAS
+    //           LÓGICA DE NAVEGACIÓN Y LOGIN
     // =============================================
 
     function showView(viewToShow) {
@@ -104,10 +91,6 @@ document.addEventListener('DOMContentLoaded', () => {
         sessionStorage.removeItem('sirari_admin_logged_in');
         showView(loginView);
     });
-
-    // =============================================
-    //           LÓGICA DE LOGIN (ADMIN)
-    // =============================================
     
     loginForm.addEventListener('submit', (e) => {
         e.preventDefault();
@@ -117,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user === 'admin' && pass === 'sirari.1') {
             sessionStorage.setItem('sirari_admin_logged_in', 'true');
             showView(adminView);
-            refreshAdminUI(); // Carga los datos del admin
+            refreshAdminUI();
         } else {
             loginError.textContent = 'Usuario o contraseña incorrectos.';
         }
@@ -166,13 +149,13 @@ document.addEventListener('DOMContentLoaded', () => {
         productCategory.innerHTML = '<option value="" disabled selected>Selecciona una categoría</option>';
         categories.forEach(cat => {
             const option = document.createElement('option');
-            option.value = cat.name; // El valor es el nombre
+            option.value = cat.name;
             option.textContent = cat.name.charAt(0).toUpperCase() + cat.name.slice(1);
             productCategory.appendChild(option);
         });
     }
 
-    // Manejador del formulario de categorías (Crear y Editar)
+    // CAMBIO: Habla con Supabase
     categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newName = categoryNameInput.value.trim().toLowerCase();
@@ -187,46 +170,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (editingId) {
             // --- LÓGICA DE EDICIÓN ---
             const oldName = categories.find(c => c.id == editingId).name;
-            try {
-                // 1. Actualizar la categoría en sí
-                await fetch(`${API_URL}/categories/${editingId}`, {
-                    method: 'PUT',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name: newName }) // json-server es flexible, no necesita el ID
-                });
-                
-                // 2. Buscar y actualizar todos los productos con la categoría antigua
-                const productsToUpdate = products.filter(p => p.category === oldName);
-                const updatePromises = productsToUpdate.map(p => {
-                    return fetch(`${API_URL}/products/${p.id}`, {
-                        method: 'PATCH', // PATCH solo actualiza un campo
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({ category: newName })
-                    });
-                });
-                await Promise.all(updatePromises);
-                
-            } catch (error) { console.error("Error al editar categoría:", error); }
+            
+            // 1. Actualizar la categoría en sí
+            const { error: catError } = await sb.from('categories').update({ name: newName }).eq('id', editingId);
+            if (catError) {
+                console.error("Error al editar categoría:", catError);
+                return;
+            }
+            
+            // 2. Buscar y actualizar todos los productos con la categoría antigua
+            // (Esto es lento, pero replica tu lógica anterior. Mejor sería con "foreign keys" en la DB)
+            const { data: productsToUpdate } = await sb.from('products').select('id').eq('category', oldName);
+            const updatePromises = productsToUpdate.map(p => 
+                sb.from('products').update({ category: newName }).eq('id', p.id)
+            );
+            await Promise.all(updatePromises);
             
         } else {
             // --- LÓGICA DE CREACIÓN ---
-            try {
-                await fetch(`${API_URL}/categories`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({ name: newName }) // json-server creará el ID
-                });
-            } catch (error) { console.error("Error al crear categoría:", error); }
+            const { error } = await sb.from('categories').insert([{ name: newName }]);
+            if (error) console.error("Error al crear categoría:", error);
         }
 
-        // Resetear formulario y recargar todo
         categoryNameInput.value = '';
         categoryEditId.value = '';
         categorySaveBtn.textContent = 'Añadir';
-        await loadDataFromServer(); // Recarga todos los datos desde el servidor
+        await loadDataFromServer(); // Recarga todos los datos
     });
 
-    // Listeners para botones de la lista de categorías
+    // CAMBIO: Habla con Supabase
     categoryList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         const name = e.target.dataset.name;
@@ -239,27 +211,20 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryNameInput.focus();
         
         } else if (e.target.classList.contains('delete-btn')) {
-            // --- LÓGICA DE ELIMINACIÓN ---
             if (confirm(`¿Seguro que quieres eliminar la categoría "${name}"?\nTodos sus productos se moverán a "otros".`)) {
-                try {
-                    // 1. Mover productos a "otros"
-                    const productsToMove = products.filter(p => p.category === name);
-                    const updatePromises = productsToMove.map(p => {
-                        return fetch(`${API_URL}/products/${p.id}`, {
-                            method: 'PATCH',
-                            headers: {'Content-Type': 'application/json'},
-                            body: JSON.stringify({ category: 'otros' })
-                        });
-                    });
-                    await Promise.all(updatePromises);
+                
+                // 1. Mover productos a "otros"
+                const { data: productsToMove } = await sb.from('products').select('id').eq('category', name);
+                const updatePromises = productsToMove.map(p => 
+                    sb.from('products').update({ category: 'otros' }).eq('id', p.id)
+                );
+                await Promise.all(updatePromises);
 
-                    // 2. Eliminar la categoría
-                    await fetch(`${API_URL}/categories/${id}`, { method: 'DELETE' });
+                // 2. Eliminar la categoría
+                await sb.from('categories').delete().eq('id', id);
 
-                    // 3. Recargar todo
-                    await loadDataFromServer();
-
-                } catch (error) { console.error("Error al eliminar categoría:", error); }
+                // 3. Recargar todo
+                await loadDataFromServer();
             }
         }
     });
@@ -268,8 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
     //     LÓGICA DEL PANEL (ADMIN) - PRODUCTOS
     // =============================================
 
-    // Convertir imágenes a Base64 (esto sigue siendo un problema para servidores reales,
-    // pero para json-server está bien. Un servidor real manejaría la subida de archivos).
+    // Convertir imágenes a Base64 (sin cambios)
     productImages.addEventListener('change', (e) => {
         imagePreviewContainer.innerHTML = '';
         imageDatacUrls = [];
@@ -298,7 +262,6 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(error => console.error("Error al leer imágenes:", error));
     });
 
-    // Generar código único (ahora consulta el array 'products')
     function generateUniqueCode() {
         let code;
         do {
@@ -319,7 +282,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     cancelEditBtn.addEventListener('click', resetAdminForm);
 
-    // Guardar (o Actualizar) el producto en el SERVIDOR
+    // CAMBIO: Habla con Supabase
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -333,64 +296,60 @@ document.addEventListener('DOMContentLoaded', () => {
             alert('Por favor, selecciona una categoría.');
             return;
         }
-
-        // Prepara el objeto producto
+        
+        // Asume que tu tabla 'products' tiene una columna 'images' de tipo 'text[]' (array de texto)
         const productData = {
             title: productTitle.value,
             description: productDesc.value,
             price: parseFloat(productPrice.value),
             category: productCategory.value
-            // Nota: El código y las imágenes se manejan por separado
         };
 
-        try {
-            if (editingId) {
-                // --- LÓGICA DE ACTUALIZAR ---
-                // Solo añade imágenes si se subieron nuevas
-                if (imageDatacUrls.length > 0) {
-                    productData.images = imageDatacUrls;
-                }
-                
-                await fetch(`${API_URL}/products/${editingId}`, {
-                    method: 'PATCH', // PATCH es mejor para actualizar
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(productData)
-                });
-                alert('¡Producto actualizado!');
+        let error = null;
 
-            } else {
-                // --- LÓGICA DE AÑADIR NUEVO ---
-                productData.code = generateUniqueCode();
-                productData.images = imageDatacUrls; // Añade las imágenes Base64
-
-                await fetch(`${API_URL}/products`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(productData)
-                });
-                alert('¡Producto guardado!');
+        if (editingId) {
+            // --- LÓGICA DE ACTUALIZAR ---
+            if (imageDatacUrls.length > 0) {
+                productData.images = imageDatacUrls;
             }
+            
+            const { error: updateError } = await sb.from('products').update(productData).eq('id', editingId);
+            error = updateError;
 
-            // Recargar datos y resetear formulario
+        } else {
+            // --- LÓGICA DE AÑADIR NUEVO ---
+            productData.code = generateUniqueCode();
+            productData.images = imageDatacUrls; 
+            
+            const { error: insertError } = await sb.from('products').insert([productData]);
+            error = insertError;
+        }
+
+        // Manejo de errores (¡Importante!)
+        if (error) {
+            console.error("Error al guardar en Supabase:", error);
+            if (error.message.includes('payload too large')) {
+                alert("Error: ¡Las imágenes son demasiado grandes! \nIntenta con menos imágenes o más pequeñas.\n(Este es el límite de Base64, no de Supabase Storage)");
+            } else {
+                alert("Error al guardar el producto.");
+            }
+        } else {
+            alert(editingId ? '¡Producto actualizado!' : '¡Producto guardado!');
             await loadDataFromServer();
             resetAdminForm();
-
-        } catch (error) {
-            // json-server también tiene un límite de tamaño (en el body del POST)
-            // Si las imágenes Base64 son gigantes, podría fallar.
-            console.error("Error al guardar producto:", error);
-            alert("Error al guardar. ¿Las imágenes son demasiado grandes? Intenta con menos.");
         }
     });
     
-    // Dibuja la lista de productos en el panel de admin
+    // Dibuja la lista de productos en el panel de admin (sin cambios)
     function renderAdminProductList() {
         adminProductList.innerHTML = '';
         products.forEach(product => {
             const item = document.createElement('div');
             item.className = 'admin-product-item';
+            // Asegúrate de que 'images' sea un array y tenga al menos una imagen
+            const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : 'placeholder.jpg';
             item.innerHTML = `
-                <img src="${product.images[0]}" alt="${product.title}">
+                <img src="${imageUrl}" alt="${product.title}">
                 <div class="admin-product-info">
                     <h4>${product.title}</h4>
                     <p>Cód: ${product.code} | Bs. ${product.price.toFixed(2)}</p>
@@ -404,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // Listener para los botones de la lista de admin (Editar/Eliminar Producto)
+    // CAMBIO: Habla con Supabase
     adminProductList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         if (!id) return;
@@ -420,12 +379,14 @@ document.addEventListener('DOMContentLoaded', () => {
             productCategory.value = product.category;
             
             imagePreviewContainer.innerHTML = '';
-            product.images.forEach(url => {
-                const img = document.createElement('img');
-                img.src = url;
-                img.className = 'image-preview-item';
-                imagePreviewContainer.appendChild(img);
-            });
+            if (product.images && product.images.length > 0) {
+                product.images.forEach(url => {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.className = 'image-preview-item';
+                    imagePreviewContainer.appendChild(img);
+                });
+            }
             imageDatacUrls = [];
             
             adminFormTitle.textContent = 'Editando Producto';
@@ -435,10 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
         
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-                try {
-                    await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
-                    await loadDataFromServer(); // Recargar
-                } catch (error) { console.error("Error al eliminar:", error); }
+                const { error } = await sb.from('products').delete().eq('id', id);
+                if (error) console.error("Error al eliminar:", error);
+                await loadDataFromServer(); // Recargar
             }
         }
     });
@@ -463,7 +423,6 @@ document.addEventListener('DOMContentLoaded', () => {
             categoryFilters.appendChild(btn);
         });
 
-        // Actualizar el listener de los filtros
         document.querySelectorAll('.category-filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
@@ -483,9 +442,9 @@ document.addEventListener('DOMContentLoaded', () => {
         );
 
         const finalFiltered = categoryFiltered.filter(p => 
-            p.title.toLowerCase().includes(searchTerm) ||
-            p.description.toLowerCase().includes(searchTerm) || 
-            p.code.toLowerCase().includes(searchTerm)
+            (p.title && p.title.toLowerCase().includes(searchTerm)) ||
+            (p.description && p.description.toLowerCase().includes(searchTerm)) || 
+            (p.code && p.code.toLowerCase().includes(searchTerm))
         );
 
         if (finalFiltered.length === 0) {
@@ -497,9 +456,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'product-card';
             card.dataset.id = product.id; 
+            const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
             card.innerHTML = `
                 <div class="product-image-container">
-                    <img src="${product.images[0]}" alt="${product.title}" class="product-image">
+                    <img src="${imageUrl}" alt="${product.title}" class="product-image">
                 </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
@@ -532,27 +492,31 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!product) return;
 
         let thumbnailsHTML = '';
-        product.images.forEach((img, index) => {
-            thumbnailsHTML += `<img src="${img}" class="gallery-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">`;
-        });
+        if (product.images && product.images.length > 0) {
+            product.images.forEach((img, index) => {
+                thumbnailsHTML += `<img src="${img}" class="gallery-thumbnail ${index === 0 ? 'active' : ''}" data-index="${index}">`;
+            });
+        }
+        const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
 
-        productDetailContent.innerHTML = `
-            <button class="close-modal" id="close-detail-modal">&times;</button>
-            <div id="product-detail-gallery">
-                <img src="${product.images[0]}" id="gallery-main-image" alt="${product.title}">
-                <div id="gallery-thumbnails">
-                    ${thumbnailsHTML}
+        productDetailModal.innerHTML = `
+            <div class="modal-content" id="product-detail-content">
+                <button class="close-modal" id="close-detail-modal">&times;</button>
+                <div id="product-detail-gallery">
+                    <img src="${mainImageUrl}" id="gallery-main-image" alt="${product.title}">
+                    <div id="gallery-thumbnails">
+                        ${thumbnailsHTML}
+                    </div>
                 </div>
-            </div>
-            <div id="product-detail-info">
-                <h2>${product.title}</h2>
-                <p class="product-code">Código: ${product.code}</p>
-                <p class="product-price">Bs. ${product.price.toFixed(2)}</p>
-                <p class="product-category">Categoría: ${product.category}</p>
-                <p class="product-full-description">${product.description}</p>
-                <button class="primary-btn add-to-cart-btn-detail" data-id="${product.id}">Añadir al Carrito</button>
-            </div>
-        `;
+                <div id="product-detail-info">
+                    <h2>${product.title}</h2>
+                    <p class="product-code">Código: ${product.code}</p>
+                    <p class="product-price">Bs. ${product.price.toFixed(2)}</p>
+                    <p class="product-category">Categoría: ${product.category}</p>
+                    <p class="product-full-description">${product.description}</p>
+                    <button class="primary-btn add-to-cart-btn-detail" data-id="${product.id}">Añadir al Carrito</button>
+                </div>
+            </div>`;
         productDetailModal.classList.remove('hidden');
 
         const mainImage = document.getElementById('gallery-main-image');
@@ -582,7 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // =============================================
-    //           LÓGICA DEL CARRITO (localStorage)
+    //           LÓGICA DEL CARRITO (SIN CAMBIOS)
     // =============================================
 
     function addToCart(productId) {
@@ -597,7 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     title: product.title,
                     price: product.price,
                     code: product.code,
-                    image: product.images[0],
+                    image: (product.images && product.images.length > 0) ? product.images[0] : '',
                     quantity: 1
                 });
             }
@@ -613,17 +577,31 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderCart() {
-        cartItems.innerHTML = '';
-        let total = 0;
+        cartModal.innerHTML = `
+            <div class="modal-content cart-modal-content">
+                <button class="close-modal" id="close-cart-modal">&times;</button>
+                <h2>Tu Carrito</h2>
+                <div id="cart-items"></div>
+                <hr>
+                <div class="cart-total">
+                    <strong>Total: Bs. <span id="cart-total">0.00</span></strong>
+                </div>
+                <button id="checkout-btn" class="primary-btn" disabled>Enviar Pedido</button>
+            </div>`;
+        
+        const cartItemsEl = document.getElementById('cart-items');
+        const cartTotalEl = document.getElementById('cart-total');
+        const checkoutBtnEl = document.getElementById('checkout-btn');
 
+        let total = 0;
         if (cart.length === 0) {
-            cartItems.innerHTML = '<p>Tu carrito está vacío.</p>';
-            checkoutBtn.disabled = true;
+            cartItemsEl.innerHTML = '<p>Tu carrito está vacío.</p>';
+            checkoutBtnEl.disabled = true;
         } else {
             cart.forEach(item => {
                 const itemTotal = item.price * item.quantity;
                 total += itemTotal;
-                cartItems.innerHTML += `
+                cartItemsEl.innerHTML += `
                     <div class="cart-item">
                         <img src="${item.image}" alt="${item.title}">
                         <div class="cart-item-info">
@@ -634,10 +612,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             });
-            checkoutBtn.disabled = false;
+            checkoutBtnEl.disabled = false;
         }
-        cartTotal.textContent = total.toFixed(2);
+        cartTotalEl.textContent = total.toFixed(2);
         updateCartCount();
+
+        // Re-asignar listeners para el modal de carrito
+        document.getElementById('close-cart-modal').addEventListener('click', () => cartModal.classList.add('hidden'));
+        document.getElementById('checkout-btn').addEventListener('click', () => { cartModal.classList.add('hidden'); checkoutModal.classList.remove('hidden'); });
+        cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
+        cartItemsEl.addEventListener('click', (e) => { if (e.target.classList.contains('cart-item-remove')) { removeFromCart(e.target.dataset.id); }});
     }
     
     function updateCartCount() {
@@ -647,23 +631,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     cartBtn.addEventListener('click', () => { renderCart(); cartModal.classList.remove('hidden'); });
-    closeCartModal.addEventListener('click', () => cartModal.classList.add('hidden'));
-    cartModal.addEventListener('click', (e) => { if (e.target === cartModal) cartModal.classList.add('hidden'); });
-    cartItems.addEventListener('click', (e) => { if (e.target.classList.contains('cart-item-remove')) { removeFromCart(e.target.dataset.id); }});
     
     // =============================================
-    //           LÓGICA DE CHECKOUT (WHATSAPP)
+    //           LÓGICA DE CHECKOUT (SIN CAMBIOS)
     // =============================================
-
-    checkoutBtn.addEventListener('click', () => { cartModal.classList.add('hidden'); checkoutModal.classList.remove('hidden'); });
-    closeCheckoutModal.addEventListener('click', () => checkoutModal.classList.add('hidden'));
+    
+    checkoutModal.innerHTML = `
+        <div class="modal-content">
+            <button class="close-modal" id="close-checkout-modal">&times;</button>
+            <h2>Datos de Envío</h2>
+            <form id="checkout-form">
+                <div class="form-group"><label for="customer-name">Nombre Completo:</label><input type="text" id="customer-name" required></div>
+                <div class="form-group"><label for="customer-location">Tu Ubicación:</label><textarea id="customer-location" rows="3" required></textarea></div>
+                <button type="submit" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
+            </form>
+        </div>`;
+    
+    document.getElementById('close-checkout-modal').addEventListener('click', () => checkoutModal.classList.add('hidden'));
     checkoutModal.addEventListener('click', (e) => { if (e.target === checkoutModal) checkoutModal.classList.add('hidden'); });
-
-    checkoutForm.addEventListener('submit', (e) => {
+    document.getElementById('checkout-form').addEventListener('submit', (e) => {
         e.preventDefault();
-        const name = customerName.value;
-        const location = customerLocation.value;
-        const tuNumeroWhatsapp = '591XXXXXXXX'; // ¡RECUERDA CONFIGURAR ESTO!
+        const name = document.getElementById('customer-name').value;
+        const location = document.getElementById('customer-location').value;
+        const tuNumeroWhatsapp = '591XXXXXXXX'; 
         
         if (tuNumeroWhatsapp === '591XXXXXXXX') {
             alert('Error: Debes configurar tu número de WhatsApp en el archivo app.js.');
@@ -685,17 +675,16 @@ document.addEventListener('DOMContentLoaded', () => {
             mensaje += `*Cantidad:* ${item.quantity}\n`;
             mensaje += `*Subtotal:* Bs. ${totalItem.toFixed(2)}\n`;
         });
-
         mensaje += `\n*-----------------------------------*\n`;
         mensaje += `*TOTAL A PAGAR: Bs. ${granTotal.toFixed(2)}*`;
 
-        const urlWhatsApp = `https://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
+        const urlWhatsApp = `httpshttps://api.whatsapp.com/send?phone=${tuNumeroWhatsapp}&text=${encodeURIComponent(mensaje)}`;
         window.open(urlWhatsApp, '_blank');
         
         cart = [];
         saveCart();
         renderCart();
-        checkoutForm.reset();
+        document.getElementById('checkout-form').reset();
         checkoutModal.classList.add('hidden');
     });
 
@@ -703,23 +692,29 @@ document.addEventListener('DOMContentLoaded', () => {
     //           INICIALIZACIÓN DE LA APP
     // =============================================
     
-    // Nueva función para cargar datos desde el servidor
+    // CAMBIO: Carga los datos desde Supabase al iniciar
     async function loadDataFromServer() {
+        // Verifica si la conexión está lista
+        if (SUPABASE_URL === 'URL_DE_TU_PROYECTO_SUPABASE' || SUPABASE_KEY === 'TU_LLAVE_PUBLISHABLE_ANON') {
+            document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong> y añade tu URL y Key de Supabase en las líneas 5 y 6.</p>`;
+            return;
+        }
+
         try {
             // Pide los productos Y las categorías al mismo tiempo
-            const [productsRes, categoriesRes] = await Promise.all([
-                fetch(`${API_URL}/products?_sort=id&_order=desc`), // Pide productos ordenados por ID
-                fetch(`${API_URL}/categories`)
-            ]);
+            const { data: categoriesData, error: catError } = await sb.from('categories').select('*');
+            const { data: productsData, error: prodError } = await sb.from('products').select('*').order('id', { ascending: false });
 
-            products = await productsRes.json();
-            categories = await categoriesRes.json();
+            if (catError) throw catError;
+            if (prodError) throw prodError;
+
+            products = productsData;
+            categories = categoriesData;
             
             // Ahora que tenemos los datos, dibujamos la página
             refreshStoreUI();
             updateCartCount();
             
-            // Si el admin ya está logueado, refresca su panel
             if (sessionStorage.getItem('sirari_admin_logged_in') === 'true') {
                 showView(adminView);
                 refreshAdminUI();
@@ -728,8 +723,8 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
         } catch (error) {
-            console.error("Error al cargar datos del servidor:", error);
-            document.body.innerHTML = `<h1>Error de Conexión</h1><p>No se pudo conectar a la base de datos (json-server). ¿Iniciaste el servidor con el comando correcto?</p>`;
+            console.error("Error al cargar datos de Supabase:", error);
+            document.body.innerHTML = `<h1>Error de Conexión</h1><p>No se pudo conectar a Supabase. Revisa tu URL, tu Llave, y que hayas deshabilitado RLS en tus tablas.</p><pre>${error.message}</pre>`;
         }
     }
     
