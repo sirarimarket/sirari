@@ -650,9 +650,9 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const name = customerName.value;
         const location = customerLocation.value; // ¡Aquí ya viene el link si usaron el botón!
-        const tuNumeroWhatsapp = '591XXXXXXXX'; 
+        const tuNumeroWhatsapp = '59173164833'; 
         
-        if (tuNumeroWhatsapp === '591XXXXXXXX') {
+        if (tuNumeroWhatsapp === '59173164833') {
             alert('Error: Debes configurar tu número de WhatsApp en el archivo app.js.');
             return;
         }
@@ -724,3 +724,4 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDataFromServer();
 
 });
+
