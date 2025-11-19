@@ -1,8 +1,8 @@
 // =============================================
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
-const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; 
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; 
+const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; // Pon tu URL aquí
+const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; // Pon tu Key aquí
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -10,7 +10,6 @@ const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 document.addEventListener('DOMContentLoaded', () => {
 
     // --- SELECTORES ---
-    // (Los mismos de siempre + los nuevos del mapa y stock)
     const views = {
         login: document.getElementById('login-view'),
         admin: document.getElementById('admin-view'),
@@ -31,6 +30,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const discountType = document.getElementById('discount-type');
     const discountValue = document.getElementById('discount-value');
 
+    // Admin Categories
+    const categoryForm = document.getElementById('category-form');
+    const categoryNameInput = document.getElementById('category-name-input');
+    const categoryEditId = document.getElementById('category-edit-id');
+    const categorySaveBtn = document.getElementById('category-save-btn');
+    const categoryList = document.getElementById('category-list');
+
     // Checkout & Map
     const checkoutForm = document.getElementById('checkout-form');
     const locationQuestionStep = document.getElementById('location-question-step');
@@ -47,23 +53,16 @@ document.addEventListener('DOMContentLoaded', () => {
     let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
     let currentCategoryFilter = 'todos';
     
-    // Variables para el Mapa
     let map = null;
     let marker = null;
-    let selectedCoordinates = null; // { lat, lng }
+    let selectedCoordinates = null;
 
-    // --- UTILIDADES DE FORMATO ---
-
-    // Convierte 1500.50 -> "1.500,<span class='small'>50</span>"
+    // --- FORMATO PRECIO ---
     function formatPriceHTML(price) {
         const num = parseFloat(price);
         if (isNaN(num)) return "0,00";
-        
-        // Formatear con separador de miles (punto)
         const formatted = num.toLocaleString('es-ES', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        
-        // Separar la parte entera de la decimal
-        const parts = formatted.split(','); // es-ES usa coma para decimales
+        const parts = formatted.split(',');
         if (parts.length === 2) {
             return `${parts[0]}<span class="decimal-small">,${parts[1]}</span>`;
         }
@@ -82,12 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
             final = price - value;
             hasDiscount = true;
         }
-        
-        return {
-            original: original,
-            final: Math.max(0, final), // No precios negativos
-            hasDiscount: hasDiscount
-        };
+        return { original, final: Math.max(0, final), hasDiscount };
     }
 
     // --- NAVEGACIÓN ---
@@ -118,98 +112,186 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- GESTIÓN DE URLS (ADMIN) ---
-    
+    // --- URLS IMAGENES ---
     function addUrlInput(value = '') {
         const wrapper = document.createElement('div');
         wrapper.className = 'url-input-wrapper';
-        
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = 'https://...';
         input.value = value;
-        
-        // Botón Eliminar Individual
         const removeBtn = document.createElement('button');
         removeBtn.type = 'button';
         removeBtn.textContent = 'X';
         removeBtn.className = 'remove-url-btn';
-        removeBtn.onclick = () => wrapper.remove(); // Se elimina a sí mismo del DOM
-        
+        removeBtn.onclick = () => wrapper.remove();
         wrapper.appendChild(input);
         wrapper.appendChild(removeBtn);
         urlInputsContainer.appendChild(wrapper);
     }
-
     addUrlBtn.addEventListener('click', () => addUrlInput());
 
-    // --- ADMIN: GUARDAR PRODUCTO ---
-    
+    // --- GUARDAR PRODUCTO (CORREGIDO) ---
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
-        // Recopilar URLs de los inputs actuales
         const inputs = urlInputsContainer.querySelectorAll('input');
         const imageUrls = [];
-        inputs.forEach(inp => {
-            if(inp.value.trim()) imageUrls.push(inp.value.trim());
-        });
+        inputs.forEach(inp => { if(inp.value.trim()) imageUrls.push(inp.value.trim()); });
         
-        // Recopilar Datos
+        // IMPORTANTE: Convertir a números para evitar error de tipo
+        const stockVal = parseInt(productStock.value) || 0;
+        const priceVal = parseFloat(document.getElementById('product-price').value) || 0;
+        const discValue = parseFloat(discountValue.value) || 0;
+
         const productData = {
             title: document.getElementById('product-title').value,
             description: document.getElementById('product-desc').value,
-            price: parseFloat(document.getElementById('product-price').value),
-            stock: parseInt(productStock.value) || 0,
+            price: priceVal,
+            stock: stockVal,
             category: document.getElementById('product-category').value,
             images: imageUrls,
             discount_type: discountType.value || null,
-            discount_value: parseFloat(discountValue.value) || 0
+            discount_value: discValue
         };
 
         const editingId = document.getElementById('product-edit-id').value;
         let error = null;
 
-        if (editingId) {
-            const { error: err } = await sb.from('products').update(productData).eq('id', editingId);
-            error = err;
-        } else {
-            productData.code = 'SIRARI-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            const { error: err } = await sb.from('products').insert([productData]);
-            error = err;
-        }
+        try {
+            if (editingId) {
+                const { error: err } = await sb.from('products').update(productData).eq('id', editingId);
+                error = err;
+            } else {
+                productData.code = 'SIRARI-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                const { error: err } = await sb.from('products').insert([productData]);
+                error = err;
+            }
 
-        if (error) alert("Error al guardar (¿Logueado?)");
-        else {
-            alert("Guardado correctamente");
-            loadDataFromServer();
-            resetAdminForm();
+            if (error) {
+                console.error(error);
+                // MUESTRA EL ERROR REAL: Esto te dirá si falta la columna 'stock' etc.
+                alert("Error al guardar: " + error.message + "\n\nVerifica que creaste las columnas en Supabase.");
+            } else {
+                alert("Producto guardado correctamente");
+                loadDataFromServer(); // Recargar para ver cambios
+                resetAdminForm();
+            }
+        } catch (e) {
+            alert("Error inesperado: " + e.message);
         }
     });
 
     function resetAdminForm() {
         addProductForm.reset();
         urlInputsContainer.innerHTML = '';
-        addUrlInput(); // Uno vacío al inicio
+        addUrlInput(); 
         document.getElementById('product-edit-id').value = '';
         document.getElementById('admin-form-title').textContent = 'Añadir Nuevo Producto';
         document.getElementById('cancel-edit-btn').classList.add('hidden');
     }
-    
     document.getElementById('cancel-edit-btn').addEventListener('click', resetAdminForm);
 
-    // --- RENDERIZADO DE TIENDA ---
+    // --- CATEGORÍAS (CORREGIDO) ---
+    categoryForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newName = categoryNameInput.value.trim().toLowerCase();
+        if (!newName) return;
+        
+        // Evitar duplicados visuales
+        if (categories.some(c => c.name === newName)) {
+            alert("La categoría ya existe");
+            return;
+        }
+
+        const { error } = await sb.from('categories').insert([{ name: newName }]);
+        
+        if (error) {
+            alert("Error al crear categoría: " + error.message);
+        } else {
+            categoryNameInput.value = '';
+            // No necesitamos recargar toda la página, solo los datos
+            await loadDataFromServer();
+            alert("Categoría creada");
+        }
+    });
+
+    function renderCategoryList() {
+        categoryList.innerHTML = '';
+        // Asegurarnos que 'otros' esté visualmente aunque no esté en DB (fallback)
+        const listToRender = [...categories];
+        if(!listToRender.find(c => c.name === 'otros')) {
+            listToRender.push({id: 'virtual', name: 'otros'});
+        }
+
+        listToRender.forEach(cat => {
+            const item = document.createElement('div');
+            item.className = 'category-item';
+            if (cat.name === 'otros') {
+                item.innerHTML = `<span>${cat.name} (Predeterminado)</span>`;
+            } else {
+                item.innerHTML = `
+                    <span>${cat.name}</span>
+                    <button class="action-btn delete-btn" data-id="${cat.id}" data-name="${cat.name}">X</button>
+                `;
+            }
+            categoryList.appendChild(item);
+        });
+
+        // Listeners para borrar
+        categoryList.querySelectorAll('.delete-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const name = btn.dataset.name;
+                if(confirm(`Borrar categoría "${name}"? Productos irán a "otros".`)) {
+                    // 1. Mover productos
+                    await sb.from('products').update({ category: 'otros' }).eq('category', name);
+                    // 2. Borrar categoria
+                    const { error } = await sb.from('categories').delete().eq('id', id);
+                    if(error) alert(error.message);
+                    else loadDataFromServer();
+                }
+            });
+        });
+    }
+
+    // --- TIENDA RENDER ---
+    function renderCategoryFilters() {
+        const container = document.getElementById('category-filters');
+        container.innerHTML = '';
+        
+        const createBtn = (text, val) => {
+            const btn = document.createElement('button');
+            btn.className = `category-filter-btn ${currentCategoryFilter === val ? 'active' : ''}`;
+            btn.textContent = text;
+            btn.onclick = () => {
+                currentCategoryFilter = val;
+                renderCategoryFilters();
+                renderProducts();
+            };
+            container.appendChild(btn);
+        };
+
+        createBtn('Ver Todos', 'todos');
+
+        // LÓGICA OFERTAS: Solo mostrar si hay productos con descuento
+        const hasOffers = products.some(p => (p.discount_type === 'percent' || p.discount_type === 'fixed') && p.discount_value > 0);
+        if (hasOffers) {
+            createBtn('🔥 Ofertas', 'ofertas');
+        }
+
+        categories.forEach(c => createBtn(c.name, c.name));
+        // Asegurar botón otros
+        if(!categories.find(c => c.name === 'otros')) createBtn('otros', 'otros');
+    }
 
     function renderProducts() {
         const grid = document.getElementById('product-grid');
         grid.innerHTML = '';
         const searchTerm = document.getElementById('search-input').value.toLowerCase();
 
-        // Filtrar
         let filtered = products.filter(p => {
-            // Filtro por categoría o "Ofertas"
             if (currentCategoryFilter === 'ofertas') {
-                // Si la categoría es ofertas, mostrar solo los que tienen descuento
                 return (p.discount_type === 'percent' || p.discount_type === 'fixed') && p.discount_value > 0;
             }
             return currentCategoryFilter === 'todos' || p.category === currentCategoryFilter;
@@ -228,40 +310,23 @@ document.addEventListener('DOMContentLoaded', () => {
         filtered.forEach(p => {
             const card = document.createElement('div');
             card.className = 'product-card';
-            card.dataset.id = p.id;
-
-            // Lógica de Precios
+            
             const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
             
-            // Badge de Oferta
             let badgeHTML = '';
             if (pricing.hasDiscount) {
                 const label = p.discount_type === 'percent' ? `-${p.discount_value}%` : `-${p.discount_value}Bs`;
                 badgeHTML = `<div class="discount-badge">${label}</div>`;
             }
 
-            // Lógica de Stock
             let stockHTML = '';
             if (p.stock > 20) stockHTML = `<p class="stock-display">+20 Disponibles</p>`;
             else if (p.stock <= 9) stockHTML = `<p class="stock-display low-stock">¡Solo ${p.stock} disponibles!</p>`;
             else stockHTML = `<p class="stock-display">${p.stock} Disponibles</p>`;
 
-            // HTML de Precios
-            let priceHTML = '';
-            if (pricing.hasDiscount) {
-                priceHTML = `
-                    <div class="price-container">
-                        <span class="original-price">Bs. ${p.price.toFixed(2)}</span>
-                        <span class="final-price discounted">Bs. ${formatPriceHTML(pricing.final)}</span>
-                    </div>
-                `;
-            } else {
-                priceHTML = `
-                    <div class="price-container">
-                        <span class="final-price">Bs. ${formatPriceHTML(p.price)}</span>
-                    </div>
-                `;
-            }
+            let priceHTML = pricing.hasDiscount 
+                ? `<div class="price-container"><span class="original-price">Bs. ${p.price.toFixed(2)}</span><span class="final-price discounted">Bs. ${formatPriceHTML(pricing.final)}</span></div>`
+                : `<div class="price-container"><span class="final-price">Bs. ${formatPriceHTML(p.price)}</span></div>`;
 
             card.innerHTML = `
                 ${badgeHTML}
@@ -273,97 +338,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     <p class="product-code">${p.code}</p>
                     ${priceHTML}
                     ${stockHTML}
-                    <button class="add-to-cart-btn primary-btn">Añadir al Carrito</button>
+                    <button class="add-to-cart-btn primary-btn" onclick="addToCart('${p.id}')">Añadir al Carrito</button>
                 </div>
             `;
             grid.appendChild(card);
         });
     }
-    
-    // Agregar listener a los botones de filtro (incluyendo Ofertas)
-    function renderCategoryFilters() {
-        const container = document.getElementById('category-filters');
-        container.innerHTML = '';
-        
-        const createBtn = (text, val) => {
-            const btn = document.createElement('button');
-            btn.className = `category-filter-btn ${currentCategoryFilter === val ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.onclick = () => {
-                currentCategoryFilter = val;
-                renderCategoryFilters(); // Re-render para actualizar clase active
-                renderProducts();
-            };
-            container.appendChild(btn);
-        };
 
-        createBtn('Ver Todos', 'todos');
-        createBtn('🔥 Ofertas', 'ofertas'); // Categoría especial
-        categories.forEach(c => createBtn(c.name, c.name));
-    }
-
-    // --- CARRITO & CHECKOUT ---
-    
-    function addToCart(productId) {
+    // --- CARRITO & CHECKOUT (MAPA LEAFLET) ---
+    window.addToCart = (productId) => { // Global para onclick string
         const prod = products.find(p => p.id == productId);
         if (!prod) return;
-        
         const existing = cart.find(i => i.id == productId);
         if (existing) existing.quantity++;
         else {
             const pricing = calculateFinalPrice(prod.price, prod.discount_type, prod.discount_value);
             cart.push({
-                id: prod.id,
-                title: prod.title,
-                price: pricing.final, // Guardamos el precio final con descuento
-                code: prod.code,
-                image: prod.images[0],
-                quantity: 1
+                id: prod.id, title: prod.title, price: pricing.final,
+                code: prod.code, image: prod.images?.[0] || '', quantity: 1
             });
         }
         saveCart();
-        alert("Agregado al carrito");
-    }
-
-    // --- LÓGICA DE MAPA (LEAFLET) ---
+        alert("Producto añadido");
+    };
 
     function initMap() {
-        // Coordenadas por defecto (Santa Cruz, Bolivia o centro genérico)
         const defaultLat = -17.7833; 
         const defaultLng = -63.1821;
-
-        if (map) {
-            map.remove(); // Limpiar mapa anterior si existe
-        }
+        if (map) map.remove();
 
         map = L.map('delivery-map').setView([defaultLat, defaultLng], 13);
-
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Marcador arrastrable
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
         marker = L.marker([defaultLat, defaultLng], {draggable: true}).addTo(map);
 
-        // Evento al mover el marcador
-        marker.on('dragend', function(e) {
-            selectedCoordinates = marker.getLatLng();
-        });
-        
-        // Click en el mapa mueve el marcador
-        map.on('click', function(e) {
-            marker.setLatLng(e.latlng);
-            selectedCoordinates = e.latlng;
-        });
-        
-        // Inicializar coords
+        marker.on('dragend', function(e) { selectedCoordinates = marker.getLatLng(); });
+        map.on('click', function(e) { marker.setLatLng(e.latlng); selectedCoordinates = e.latlng; });
         selectedCoordinates = { lat: defaultLat, lng: defaultLng };
-        
-        // Truco para que el mapa cargue bien al estar en un modal oculto
         setTimeout(() => { map.invalidateSize(); }, 200);
     }
 
-    // Flujo de Pregunta de Ubicación
     btnYesLocation.addEventListener('click', async () => {
         locationQuestionStep.classList.add('hidden');
         locationStatus.textContent = "Obteniendo GPS...";
@@ -372,12 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 navigator.geolocation.getCurrentPosition(resolve, reject, {timeout: 10000});
             });
             selectedCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-            locationStatus.textContent = "✅ Ubicación actual detectada.";
+            locationStatus.textContent = "✅ Ubicación detectada.";
             locationStatus.style.color = "green";
             checkoutSubmitBtn.classList.remove('hidden');
         } catch (e) {
-            alert("No pudimos detectar tu GPS. Por favor selecciona en el mapa.");
-            btnNoLocation.click(); // Fallback al mapa
+            alert("No pudimos detectar GPS. Usa el mapa.");
+            btnNoLocation.click();
         }
     });
 
@@ -388,61 +401,52 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     confirmMapLocationBtn.addEventListener('click', () => {
-        if (!selectedCoordinates) return;
         mapContainerWrapper.classList.add('hidden');
-        locationStatus.textContent = "✅ Ubicación del mapa confirmada.";
+        locationStatus.textContent = "✅ Ubicación mapa confirmada.";
         locationStatus.style.color = "green";
         checkoutSubmitBtn.classList.remove('hidden');
     });
 
-    // Envío final
     checkoutForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = document.getElementById('customer-name').value;
         const ref = document.getElementById('customer-location').value;
-        const phone = '59173164833';
         
-        let mapLink = 'No especificada';
-        if (selectedCoordinates) {
-            mapLink = `https://www.google.com/maps?q=${selectedCoordinates.lat},${selectedCoordinates.lng}`;
-        }
+        let mapLink = selectedCoordinates 
+            ? `https://maps.google.com/?q=${selectedCoordinates.lat},${selectedCoordinates.lng}`
+            : 'No especificada';
 
-        let msg = `*NUEVO PEDIDO SIRARI* 🛍️\n\n*Cliente:* ${name}\n*Ref:* ${ref}\n*Ubicación:* ${mapLink}\n\n*PEDIDO:*`;
-        
+        let msg = `*PEDIDO SIRARI* 🛍️\n*Cliente:* ${name}\n*Ref:* ${ref}\n*Ubicación:* ${mapLink}\n\n*ITEMS:*`;
         let total = 0;
         cart.forEach(i => {
-            const sub = i.price * i.quantity;
-            total += sub;
-            msg += `\n- ${i.title} (${i.quantity}) = Bs.${sub.toFixed(2)}`;
+            total += i.price * i.quantity;
+            msg += `\n- ${i.title} (${i.quantity}) = Bs.${(i.price * i.quantity).toFixed(2)}`;
         });
         msg += `\n\n*TOTAL: Bs. ${total.toFixed(2)}*`;
 
-        window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(msg)}`, '_blank');
+        window.open(`https://api.whatsapp.com/send?phone=59173164833&text=${encodeURIComponent(msg)}`, '_blank');
         
         cart = [];
         saveCart();
         document.getElementById('checkout-modal').classList.add('hidden');
-        // Resetear modal
+        resetCheckout();
+    });
+
+    function resetCheckout() {
         locationQuestionStep.classList.remove('hidden');
         mapContainerWrapper.classList.add('hidden');
         checkoutSubmitBtn.classList.add('hidden');
         locationStatus.textContent = '';
-    });
-    
-    // Botones de modales
+    }
+
+    // --- MODALES GENERICOS ---
     document.getElementById('cart-btn').addEventListener('click', () => {
-        const cartList = document.getElementById('cart-items');
-        cartList.innerHTML = '';
+        const list = document.getElementById('cart-items');
+        list.innerHTML = '';
         let total = 0;
         cart.forEach((item, idx) => {
-            const t = item.price * item.quantity;
-            total += t;
-            cartList.innerHTML += `
-                <div class="cart-item">
-                    <img src="${item.image}" style="width:50px;">
-                    <div><h4>${item.title}</h4><p>Bs. ${t.toFixed(2)}</p></div>
-                    <button onclick="removeItem(${idx})">X</button>
-                </div>`;
+            total += item.price * item.quantity;
+            list.innerHTML += `<div class="cart-item"><img src="${item.image}" style="width:50px;"><div><b>${item.title}</b><br>Bs. ${item.price.toFixed(2)}</div><button onclick="cart.splice(${idx},1); saveCart(); document.getElementById('cart-btn').click()">X</button></div>`;
         });
         document.getElementById('cart-total').textContent = total.toFixed(2);
         document.getElementById('cart-modal').classList.remove('hidden');
@@ -454,88 +458,82 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('checkout-modal').classList.remove('hidden');
     });
 
-    document.querySelectorAll('.close-modal').forEach(b => {
-        b.addEventListener('click', (e) => e.target.closest('.modal').classList.add('hidden'));
-    });
+    document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', (e) => e.target.closest('.modal').classList.add('hidden')));
 
-    // Función global para eliminar del carrito (necesaria por el innerHTML)
-    window.removeItem = (idx) => {
-        cart.splice(idx, 1);
-        saveCart();
-        document.getElementById('cart-btn').click(); // Refrescar
-    };
-
-    // Carga Inicial
+    // --- CARGA INICIAL ---
     async function loadDataFromServer() {
         const [sess, cats, prods] = await Promise.all([
             sb.auth.getSession(),
             sb.from('categories').select('*'),
             sb.from('products').select('*').order('id', {ascending: false})
         ]);
-        
+
         categories = cats.data || [];
         products = prods.data || [];
-        
+
         renderCategoryFilters();
         renderProducts();
-        
+        renderCategoryList();
+
         if (sess.data.session) {
             showView('admin');
-            
-            // Renderizar lista admin simple
-            const adminList = document.getElementById('admin-product-list');
-            adminList.innerHTML = '';
-            products.forEach(p => {
-                adminList.innerHTML += `
-                    <div class="admin-product-item">
-                        <img src="${p.images[0] || ''}">
-                        <div><h4>${p.title}</h4><p>${p.code}</p></div>
-                        <button class="action-btn edit-btn" data-id="${p.id}">Editar</button>
-                        <button class="action-btn delete-btn" data-id="${p.id}">Eliminar</button>
-                    </div>`;
-            });
-            
-            // Listeners de botones dinámicos admin
-            adminList.querySelectorAll('.delete-btn').forEach(b => {
-                b.onclick = async () => {
-                    if(confirm('Borrar?')) {
-                        await sb.from('products').delete().eq('id', b.dataset.id);
-                        loadDataFromServer();
-                    }
-                };
-            });
-             adminList.querySelectorAll('.edit-btn').forEach(b => {
-                b.onclick = () => {
-                    const p = products.find(pr => pr.id == b.dataset.id);
-                    document.getElementById('product-edit-id').value = p.id;
-                    document.getElementById('product-title').value = p.title;
-                    document.getElementById('product-desc').value = p.description;
-                    document.getElementById('product-price').value = p.price;
-                    document.getElementById('product-stock').value = p.stock;
-                    document.getElementById('product-category').value = p.category;
-                    discountType.value = p.discount_type || "";
-                    discountValue.value = p.discount_value || "";
-                    
-                    urlInputsContainer.innerHTML = '';
-                    if(p.images) p.images.forEach(url => addUrlInput(url));
-                    
-                    document.getElementById('admin-form-title').textContent = 'Editar';
-                    document.getElementById('cancel-edit-btn').classList.remove('hidden');
-                    window.scrollTo(0,0);
-                };
-            });
-            
-             // Llenar select de categorías
-            const catSelect = document.getElementById('product-category');
-            catSelect.innerHTML = '';
-            categories.forEach(c => {
-                catSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`;
-            });
-
+            renderAdminList();
+            fillCategorySelect();
         } else {
             showView('store');
         }
     }
-    
+
+    function renderAdminList() {
+        const list = document.getElementById('admin-product-list');
+        list.innerHTML = '';
+        products.forEach(p => {
+            list.innerHTML += `
+                <div class="admin-product-item">
+                    <img src="${p.images?.[0] || ''}">
+                    <div><h4>${p.title}</h4><p>Stock: ${p.stock}</p></div>
+                    <button class="action-btn edit-btn" onclick="editProduct('${p.id}')">Editar</button>
+                    <button class="action-btn delete-btn" onclick="deleteProduct('${p.id}')">X</button>
+                </div>`;
+        });
+    }
+
+    window.editProduct = (id) => {
+        const p = products.find(x => x.id == id);
+        document.getElementById('product-edit-id').value = p.id;
+        document.getElementById('product-title').value = p.title;
+        document.getElementById('product-desc').value = p.description;
+        document.getElementById('product-price').value = p.price;
+        document.getElementById('product-stock').value = p.stock;
+        document.getElementById('product-category').value = p.category;
+        discountType.value = p.discount_type || "";
+        discountValue.value = p.discount_value || "";
+        urlInputsContainer.innerHTML = '';
+        if(p.images) p.images.forEach(url => addUrlInput(url));
+        else addUrlInput();
+        document.getElementById('admin-form-title').textContent = 'Editar';
+        document.getElementById('cancel-edit-btn').classList.remove('hidden');
+        window.scrollTo(0,0);
+    };
+
+    window.deleteProduct = async (id) => {
+        if(confirm('¿Borrar?')) {
+            await sb.from('products').delete().eq('id', id);
+            loadDataFromServer();
+        }
+    };
+
+    function fillCategorySelect() {
+        const sel = document.getElementById('product-category');
+        sel.innerHTML = '';
+        // Asegurar que 'otros' aparezca en el select también
+        const cats = [...categories];
+        if(!cats.find(c => c.name === 'otros')) cats.push({name: 'otros'});
+        cats.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+    }
+
+    function saveCart() { localStorage.setItem('sirari_cart', JSON.stringify(cart)); updateCartCount(); }
+    function updateCartCount() { document.getElementById('cart-count').textContent = cart.reduce((a,b)=>a+b.quantity,0); document.getElementById('cart-count').style.display = cart.length?'block':'none'; }
+
     loadDataFromServer();
 });
