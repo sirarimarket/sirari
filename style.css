@@ -1,4 +1,4 @@
-/* MISMAS VARIABLES Y GLOBALES QUE ANTES ... */
+/* VARIABLES GLOBALES */
 :root {
     --color-principal: #D32F2F;
     --color-principal-dark: #B71C1C;
@@ -29,17 +29,40 @@ button:active { transform: scale(0.98); }
 .edit-btn { background-color: var(--color-azul); }
 .delete-btn { background-color: var(--color-negro); }
 
-/* LOGIN Y ADMIN LAYOUT (Igual que antes) */
-#login-view { display: flex; justify-content: center; align-items: center; background-color: var(--color-principal); }
-.login-container { background: var(--color-blanco); padding: 2.5rem; border-radius: 8px; box-shadow: var(--sombra); text-align: center; width: 90%; max-width: 400px; }
+/* LOGIN (CORREGIDO) */
+#login-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--color-principal);
+    position: fixed; /* Asegura que cubra todo */
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 1000;
+}
+.login-container {
+    background: var(--color-blanco);
+    padding: 2.5rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    text-align: center;
+    width: 90%;
+    max-width: 400px;
+}
+.login-container h1 { color: var(--color-principal); margin-bottom: 1.5rem; }
+#login-form { display: flex; flex-direction: column; gap: 1rem; }
+#login-form input { padding: 12px; border: 1px solid #E0E0E0; border-radius: 6px; font-size: 1rem; }
+#login-form button { background-color: var(--color-principal); color: white; }
+#go-to-store-btn { margin-top: 1rem; width: 100%; }
+.error-msg { color: var(--color-principal); font-size: 0.9rem; margin-top: 0.5rem; min-height: 1.2em; }
+
+/* ADMIN PANEL */
 .admin-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background-color: var(--color-negro); color: var(--color-blanco); }
 .admin-container { max-width: 800px; margin: 2rem auto; padding: 2rem; background: var(--color-blanco); border-radius: 8px; box-shadow: var(--sombra); }
 
-/* FORMULARIOS ADMIN MEJORADOS */
+/* FORMULARIOS */
 .form-group { margin-bottom: 1.5rem; }
-.form-row { display: flex; gap: 1rem; }
-.half-width { flex: 1; }
-
+.form-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+.half-width { flex: 1; min-width: 200px; }
 .form-group label { display: block; font-weight: bold; margin-bottom: 0.5rem; }
 .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; font-size: 1rem; border: 1px solid #CCC; border-radius: 6px; }
 .form-group textarea { min-height: 100px; resize: vertical; }
@@ -48,10 +71,9 @@ button:active { transform: scale(0.98); }
 #url-inputs-container { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
 .url-input-wrapper { display: flex; align-items: center; gap: 10px; }
 .url-input-wrapper input { flex-grow: 1; }
-/* Botón rojo pequeño para borrar URL individual */
-.remove-url-btn { background: #ffdddd; color: red; border: 1px solid red; border-radius: 4px; padding: 5px 10px; font-weight: bold; }
+.remove-url-btn { background: #ffdddd; color: red; border: 1px solid red; border-radius: 4px; padding: 5px 10px; font-weight: bold; cursor: pointer; }
 
-/* ESTILOS DE TIENDA */
+/* TIENDA */
 .store-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background-color: var(--color-principal); color: var(--color-blanco); position: sticky; top: 0; z-index: 100; box-shadow: var(--sombra); }
 .logo { font-size: 2rem; font-weight: bold; }
 .search-bar { flex-grow: 1; margin: 0 2rem; }
@@ -62,68 +84,44 @@ button:active { transform: scale(0.98); }
 
 /* FILTROS */
 #category-filters { background: white; padding: 0.75rem 2rem; border-bottom: 1px solid #E0E0E0; display: flex; gap: 0.5rem; overflow-x: auto; }
-.category-filter-btn { background: var(--color-gris-claro); color: var(--color-negro); border: 1px solid #E0E0E0; padding: 8px 16px; border-radius: 20px; white-space: nowrap; }
+.category-filter-btn { background: var(--color-gris-claro); color: var(--color-negro); border: 1px solid #E0E0E0; padding: 8px 16px; border-radius: 20px; white-space: nowrap; cursor: pointer; }
 .category-filter-btn.active { background: var(--color-principal); color: white; border-color: var(--color-principal); }
 
-/* GRILLA DE PRODUCTOS */
+/* GRILLA PRODUCTOS */
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; padding: 2rem; max-width: 1400px; margin: 0 auto; }
-
-.product-card { 
-    background: white; 
-    border-radius: 8px; 
-    box-shadow: var(--sombra); 
-    overflow: hidden; 
-    display: flex; 
-    flex-direction: column; 
-    transition: 0.2s; 
-    position: relative; /* IMPORTANTE para el badge */
-}
+.product-card { background: white; border-radius: 8px; box-shadow: var(--sombra); overflow: hidden; display: flex; flex-direction: column; transition: 0.2s; position: relative; }
 .product-card:hover { transform: translateY(-5px); box-shadow: 0 8px 16px rgba(0,0,0,0.15); }
-
 .product-image-container { width: 100%; padding-top: 100%; position: relative; background: var(--color-gris-claro); }
 .product-image { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
 
-/* BADGE DE OFERTA (FLOTANTE) */
-.discount-badge {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    background-color: var(--color-principal);
-    color: white;
-    padding: 5px 10px;
-    border-radius: 4px;
-    font-weight: bold;
-    font-size: 0.9rem;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    z-index: 10;
-}
+/* BADGE DE OFERTA */
+.discount-badge { position: absolute; top: 10px; right: 10px; background-color: var(--color-principal); color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 0.9rem; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 10; }
 
 .product-info { padding: 1rem; display: flex; flex-direction: column; flex-grow: 1; }
 .product-title { font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: 600; }
 .product-desc-snippet { font-size: 0.9rem; color: var(--color-gris-texto); margin-bottom: 0.5rem; height: 2.4em; overflow: hidden; }
 
-/* PRECIOS Y STOCK */
+/* PRECIOS */
 .price-container { display: flex; flex-direction: column; margin-bottom: 0.5rem; }
 .original-price { text-decoration: line-through; color: var(--color-gris-texto); font-size: 0.9rem; }
 .final-price { font-size: 1.3rem; font-weight: bold; color: var(--color-negro); }
 .final-price.discounted { color: var(--color-principal); }
-
-/* Decimales pequeños */
 .decimal-small { font-size: 0.6em; vertical-align: top; }
 
 .stock-display { font-size: 0.85rem; margin-bottom: 1rem; font-weight: 500; color: var(--color-verde); }
 .stock-display.low-stock { color: var(--color-principal); }
-
 .add-to-cart-btn { width: 100%; margin-top: auto; }
 
-/* MAPA EN CHECKOUT */
+/* MAPA */
 #delivery-map { height: 300px; width: 100%; border-radius: 8px; margin-top: 10px; border: 1px solid #ccc; }
+.category-item { display: flex; justify-content: space-between; padding: 10px; border: 1px solid #eee; margin-bottom: 5px; border-radius: 4px; align-items: center; }
 
-/* MODALES (Igual que antes) */
+/* MODALES */
 .modal { position: fixed; z-index: 200; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); display: flex; justify-content: center; align-items: center; }
 .modal-content { background: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 600px; position: relative; animation: slide-down 0.3s; }
 @keyframes slide-down { from {transform: translateY(-30px); opacity: 0;} to {transform: translateY(0); opacity: 1;} }
 .close-modal { position: absolute; top: 10px; right: 20px; font-size: 2rem; background: none; border: none; }
 
-/* Ajustes de Admin List */
-.admin-product-item img { width: 60px; height: 60px; object-fit: cover; }
+/* ADMIN LIST */
+.admin-product-item { display: flex; gap: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; align-items: center; }
+.admin-product-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
