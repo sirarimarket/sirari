@@ -50,28 +50,28 @@
                     <input type="hidden" id="product-edit-id">
                     
                     <div class="form-group">
-                        <label for="product-title">Título del Producto:</label>
+                        <label>Título del Producto:</label>
                         <input type="text" id="product-title" required>
                     </div>
 
                     <div class="form-group">
-                        <label for="product-desc">Descripción:</label>
+                        <label>Descripción:</label>
                         <textarea id="product-desc" required></textarea>
                     </div>
                     
                     <div class="form-row">
                         <div class="form-group half-width">
-                            <label for="product-price">Precio (Bs.):</label>
+                            <label>Precio (Bs.):</label>
                             <input type="number" id="product-price" step="0.01" min="0" required>
                         </div>
                         <div class="form-group half-width">
-                            <label for="product-stock">Stock (Cantidad):</label>
-                            <input type="number" id="product-stock" min="0" required>
+                            <label>Stock (Cantidad):</label>
+                            <input type="number" id="product-stock" min="0" value="1" required>
                         </div>
                     </div>
 
-                    <div class="form-group" style="background: #f9f9f9; padding: 10px; border-radius: 6px;">
-                        <label>Oferta / Descuento (Opcional):</label>
+                    <div class="form-group" style="background: #f9f9f9; padding: 15px; border-radius: 8px; border: 1px solid #eee;">
+                        <label style="color: var(--color-principal);">Oferta / Descuento (Opcional):</label>
                         <div class="form-row">
                             <div class="form-group half-width">
                                 <select id="discount-type">
@@ -93,7 +93,7 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="product-category">Categoría:</label>
+                        <label>Categoría:</label>
                         <select id="product-category" required></select>
                     </div>
                     
@@ -129,7 +129,6 @@
         </header>
 
         <nav id="category-filters"></nav>
-
         <main id="product-grid" class="product-grid"></main>
 
         <div id="product-detail-modal" class="modal hidden">
@@ -153,7 +152,6 @@
             <div class="modal-content">
                 <button class="close-modal" id="close-checkout-modal">×</button>
                 <h2>Datos de Envío</h2>
-                
                 <form id="checkout-form">
                     <div class="form-group">
                         <label>Nombre Completo:</label>
@@ -165,7 +163,7 @@
                     </div>
 
                     <div id="location-question-step">
-                        <p style="margin-bottom: 10px; font-weight: bold;">¿Estás actualmente en el lugar de entrega?</p>
+                        <p style="margin-bottom: 10px; font-weight: bold; text-align:center;">¿Estás actualmente en el lugar de entrega?</p>
                         <div style="display: flex; gap: 10px; justify-content: center;">
                             <button type="button" id="btn-yes-location" class="secondary-btn" style="width: 100px;">SÍ</button>
                             <button type="button" id="btn-no-location" class="secondary-btn" style="width: 100px;">NO</button>
@@ -179,12 +177,10 @@
                     </div>
 
                     <p id="location-status" class="location-status-msg"></p> 
-                    
                     <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
                 </form>
             </div>
         </div>
-
     </section>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
