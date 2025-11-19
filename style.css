@@ -2,7 +2,7 @@
 /* VARIABLES Y GLOBALES                */
 /* ============================================= */
 :root {
-    --color-principal: #D32F2F; /* Un rojo fuerte (Sirari) */
+    --color-principal: #D32F2F;
     --color-principal-dark: #B71C1C;
     --color-negro: #212121;
     --color-blanco: #FFFFFF;
@@ -72,7 +72,12 @@ button:active {
     background-color: #E0E0E0;
 }
 
-/* Botones de acción pequeños (Editar/Eliminar) */
+.small-btn {
+    padding: 8px 15px;
+    font-size: 0.9rem;
+    margin-top: 5px;
+}
+
 .action-btn {
     padding: 5px 10px;
     font-size: 0.85rem;
@@ -131,7 +136,6 @@ button:active {
     height: 1.2em;
 }
 
-
 /* ============================================= */
 /* PANEL ADMIN                     */
 /* ============================================= */
@@ -172,8 +176,7 @@ button:active {
 .form-group input[type="text"],
 .form-group input[type="number"],
 .form-group textarea,
-.form-group select,
-.form-group input[type="file"] {
+.form-group select {
     width: 100%;
     padding: 10px;
     font-size: 1rem;
@@ -185,20 +188,20 @@ button:active {
     resize: vertical;
 }
 
-/* Vista previa de múltiples imágenes */
-#image-preview-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+/* NUEVO: Estilos para los inputs de URL */
+#url-inputs-container {
+    display: flex;
+    flex-direction: column;
     gap: 10px;
-    margin-top: 1rem;
+    margin-bottom: 10px;
 }
-.image-preview-item {
-    width: 100px;
-    height: 100px;
-    border: 1px dashed #CCC;
-    border-radius: 6px;
-    object-fit: contain; /* Ajuste perfecto */
-    background-color: var(--color-gris-claro);
+.url-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.url-input-wrapper input {
+    flex-grow: 1;
 }
 
 .admin-form-actions {
@@ -259,7 +262,7 @@ button:active {
 .admin-product-item img {
     width: 70px;
     height: 70px;
-    object-fit: contain;
+    object-fit: cover; /* cover para que se vea bien el recorte */
     border-radius: 6px;
     background-color: var(--color-gris-claro);
 }
@@ -287,7 +290,6 @@ button:active {
     text-align: center;
     color: var(--color-blanco);
 }
-
 
 /* ============================================= */
 /* TIENDA USUARIO                  */
@@ -342,14 +344,13 @@ button:active {
     font-size: 0.75rem;
 }
 
-/* Filtros de Categoría */
 #category-filters {
     background: var(--color-blanco);
     padding: 0.75rem 2rem;
     border-bottom: 1px solid #E0E0E0;
     display: flex;
     gap: 0.5rem;
-    overflow-x: auto; /* Permite scroll horizontal en móviles */
+    overflow-x: auto;
 }
 .category-filter-btn {
     background: var(--color-gris-claro);
@@ -359,7 +360,7 @@ button:active {
     border-radius: 20px;
     font-size: 0.9rem;
     font-weight: 500;
-    white-space: nowrap; /* Evita que el texto se parta */
+    white-space: nowrap;
 }
 .category-filter-btn.active {
     background: var(--color-principal);
@@ -367,7 +368,6 @@ button:active {
     border-color: var(--color-principal);
 }
 
-/* Grilla de Productos */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -392,7 +392,7 @@ button:active {
 }
 .product-image-container {
     width: 100%;
-    padding-top: 100%; /* 1:1 */
+    padding-top: 100%;
     position: relative;
     background-color: var(--color-gris-claro);
     cursor: pointer;
@@ -403,7 +403,7 @@ button:active {
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: contain; /* Muestra la imagen completa */
+    object-fit: cover; /* Optimizado para URLs */
 }
 .product-info {
     padding: 1rem;
@@ -411,17 +411,16 @@ button:active {
     flex-direction: column;
     flex-grow: 1;
 }
-.product-title { /* Nuevo */
+.product-title {
     font-size: 1.1rem;
     font-weight: 600;
     margin-bottom: 0.5rem;
 }
-.product-desc-snippet { /* Nuevo */
+.product-desc-snippet {
     font-size: 0.9rem;
     color: var(--color-gris-texto);
     margin-bottom: 0.5rem;
     flex-grow: 1;
-    /* Limitar a 2 línas */
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -444,10 +443,7 @@ button:active {
     width: 100%;
 }
 
-
-/* ============================================= */
-/* MODALES                       */
-/* ============================================= */
+/* MODALES */
 .modal {
     position: fixed;
     z-index: 200;
@@ -489,7 +485,6 @@ button:active {
     color: var(--color-negro);
 }
 
-/* Modal Detalle Producto - Galería */
 #product-detail-content {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -515,7 +510,7 @@ button:active {
 .gallery-thumbnail {
     width: 100%;
     height: 50px;
-    object-fit: contain;
+    object-fit: cover;
     border: 2px solid var(--color-gris-claro);
     border-radius: 4px;
     cursor: pointer;
@@ -523,7 +518,7 @@ button:active {
 .gallery-thumbnail.active {
     border-color: var(--color-principal);
 }
-#product-detail-info h2 { /* Título */
+#product-detail-info h2 {
     font-size: 1.8rem;
     margin-bottom: 0.5rem;
 }
@@ -539,13 +534,12 @@ button:active {
     color: var(--color-gris-texto);
     margin-bottom: 1rem;
 }
-#product-detail-info .product-full-description { /* Descripción completa */
+#product-detail-info .product-full-description {
     font-size: 1rem;
     margin-bottom: 1.5rem;
-    white-space: pre-wrap; /* Respeta saltos de línea */
+    white-space: pre-wrap;
 }
 
-/* Modal Carrito */
 .cart-modal-content {
     max-width: 700px;
 }
@@ -564,13 +558,13 @@ button:active {
 .cart-item img {
     width: 70px;
     height: 70px;
-    object-fit: contain;
+    object-fit: cover;
     border-radius: 6px;
 }
 .cart-item-info {
     flex-grow: 1;
 }
-.cart-item-info h4 { /* Título en carrito */
+.cart-item-info h4 {
     font-size: 1rem;
 }
 .cart-item-info p {
@@ -595,15 +589,10 @@ button:active {
     width: 100%;
 }
 
-/* =================================== */
-/* NUEVA CLASE PARA MENSAJE DE UBICACIÓN */
-/* =Example (agregado) */
-/* =================================== */
 .location-status-msg {
     font-size: 0.9rem;
     color: var(--color-gris-texto);
     text-align: center;
     margin-bottom: 1rem;
-    /* Le damos altura fija para que la UI no "salte" */
     height: 1.2em; 
 }
