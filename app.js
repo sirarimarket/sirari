@@ -1,8 +1,8 @@
 // =============================================
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
-const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; // Pon tu URL aquí
-const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; // Pon tu Key aquí
+const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // Pon tu URL aquí
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // Pon tu Key aquí
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -537,3 +537,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadDataFromServer();
 });
+
