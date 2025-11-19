@@ -1,26 +1,17 @@
 // =============================================
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
-// Pega tu URL y tu Llave "Publishable" (anon) aquí
-const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // (Asegúrate que esto esté bien)
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // (Asegúrate que esto esté bien)
-// =============================================
-// =============================================
-//         ¡CONFIGURACIÓN DE SUPABASE!
-// =============================================
-// (¡Asegúrate de que tu URL y Llave estén aquí!)
-//const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; 
-//const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; 
+// Pega tu URL y tu Llave aquí
+const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; 
+const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; 
 
 // Crea el cliente de Supabase
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// ¡Ya no hay contraseñas ni hashes aquí!
-
 document.addEventListener('DOMContentLoaded', () => {
 
-    // Selectores de Elementos (sin cambios)
+    // Selectores de Elementos
     const loginView = document.getElementById('login-view');
     const adminView = document.getElementById('admin-view');
     const storeView = document.getElementById('store-view');
@@ -31,23 +22,28 @@ document.addEventListener('DOMContentLoaded', () => {
     const goToStoreBtn = document.getElementById('go-to-store-btn');
     const adminLoginBtn = document.getElementById('admin-login-btn');
     const adminLogoutBtn = document.getElementById('admin-logout-btn');
+    
     const categoryForm = document.getElementById('category-form');
     const categoryNameInput = document.getElementById('category-name-input');
     const categoryEditId = document.getElementById('category-edit-id');
     const categorySaveBtn = document.getElementById('category-save-btn');
     const categoryList = document.getElementById('category-list');
+    
     const addProductForm = document.getElementById('add-product-form');
     const adminFormTitle = document.getElementById('admin-form-title');
     const productEditId = document.getElementById('product-edit-id');
     const productTitle = document.getElementById('product-title');
     const productDesc = document.getElementById('product-desc');
     const productPrice = document.getElementById('product-price');
-    const productImages = document.getElementById('product-images');
-    const imagePreviewContainer = document.getElementById('image-preview-container');
     const productCategory = document.getElementById('product-category');
     const saveProductBtn = document.getElementById('save-product-btn');
     const cancelEditBtn = document.getElementById('cancel-edit-btn');
     const adminProductList = document.getElementById('admin-product-list');
+    
+    // NUEVOS SELECTORES PARA URLS
+    const urlInputsContainer = document.getElementById('url-inputs-container');
+    const addUrlBtn = document.getElementById('add-url-btn');
+
     const searchInput = document.getElementById('search-input');
     const categoryFilters = document.getElementById('category-filters');
     const productGrid = document.getElementById('product-grid');
@@ -68,13 +64,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const checkoutSubmitBtn = document.getElementById('checkout-submit-btn');
     const locationStatus = document.getElementById('location-status');
 
-    // =============================================
-    //         VARIABLES GLOBALES
-    // =============================================
+    // VARIABLES GLOBALES
     let products = [];
     let categories = [];
     let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
-    let imageDatacUrls = [];
     let currentCategoryFilter = 'todos';
 
     function saveCart() {
@@ -94,21 +87,17 @@ document.addEventListener('DOMContentLoaded', () => {
     goToStoreBtn.addEventListener('click', () => showView(storeView));
     adminLoginBtn.addEventListener('click', () => showView(loginView));
     
-    // CAMBIO: adminLogoutBtn ahora llama a Supabase
     adminLogoutBtn.addEventListener('click', async () => {
-        const { error } = await sb.auth.signOut(); // Cierra la sesión en Supabase
+        const { error } = await sb.auth.signOut(); 
         if (error) console.error("Error al cerrar sesión:", error);
-        showView(loginView); // Manda al login
+        showView(loginView);
     });
     
-    // CAMBIO: loginForm ahora llama a Supabase
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
-        // El "username" ahora es el email que creaste
         const email = usernameInput.value; 
         const password = passwordInput.value;
 
-        // 1. Intenta iniciar sesión con Supabase
         const { data, error } = await sb.auth.signInWithPassword({
             email: email,
             password: password,
@@ -116,9 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (error) {
             loginError.textContent = 'Email o contraseña incorrectos.';
-            console.error('Error de login:', error.message);
         } else {
-            // 2. Si tiene éxito, Supabase guarda la sesión.
             loginError.textContent = '';
             showView(adminView);
             refreshAdminUI();
@@ -128,8 +115,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //       LÓGICA DEL PANEL (ADMIN) - General
     // =============================================
-    // (Esta lógica ahora es segura, porque si un
-    // atacante la llama, Supabase la bloqueará gracias a RLS)
 
     function refreshAdminUI() {
         renderCategoryList();
@@ -146,8 +131,6 @@ document.addEventListener('DOMContentLoaded', () => {
     //     LÓGICA DEL PANEL (ADMIN) - CATEGORÍAS
     // =============================================
     
-    // ... (El código de categorías no cambia) ...
-    // ... (Si no estás logueado, Supabase bloqueará el .insert() y .delete()) ...
     function renderCategoryList() {
         categoryList.innerHTML = '';
         categories.forEach(cat => {
@@ -188,13 +171,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (editingId) {
             const oldName = categories.find(c => c.id == editingId).name;
             const { error: catError } = await sb.from('categories').update({ name: newName }).eq('id', editingId);
-            if (catError) { console.error("Error al editar categoría:", catError); alert('Error de base de datos. ¿Estás logueado?'); return; }
+            if (catError) { alert('Error. ¿Estás logueado?'); return; }
             const { data: productsToUpdate } = await sb.from('products').select('id').eq('category', oldName);
             const updatePromises = productsToUpdate.map(p => sb.from('products').update({ category: newName }).eq('id', p.id));
             await Promise.all(updatePromises);
         } else {
             const { error } = await sb.from('categories').insert([{ name: newName }]);
-            if (error) { console.error("Error al crear categoría:", error); alert('Error de base de datos. ¿Estás logueado?'); }
+            if (error) { alert('Error. ¿Estás logueado?'); }
         }
         categoryNameInput.value = '';
         categoryEditId.value = '';
@@ -225,33 +208,43 @@ document.addEventListener('DOMContentLoaded', () => {
     //     LÓGICA DEL PANEL (ADMIN) - PRODUCTOS
     // =============================================
     
-    // ... (El código de productos no cambia) ...
-    // ... (Si no estás logueado, Supabase bloqueará el .insert(), .update() y .delete()) ...
-    productImages.addEventListener('change', (e) => {
-        imagePreviewContainer.innerHTML = '';
-        imageDatacUrls = [];
-        const files = Array.from(e.target.files).slice(0, 10);
-        if (files.length === 0) return;
-        const readPromises = files.map(file => {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = (event) => resolve(event.target.result);
-                reader.onerror = (error) => reject(error);
-                reader.readAsDataURL(file);
-            });
-        });
-        Promise.all(readPromises)
-            .then(urls => {
-                imageDatacUrls = urls;
-                urls.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.className = 'image-preview-item';
-                    imagePreviewContainer.appendChild(img);
-                });
-            })
-            .catch(error => console.error("Error al leer imágenes:", error));
+    // NUEVO: Función para crear un campo de input URL
+    function addUrlInput(value = '') {
+        const inputs = urlInputsContainer.querySelectorAll('input');
+        if (inputs.length >= 10) {
+            alert('Máximo 10 imágenes permitidas.');
+            return;
+        }
+        
+        const wrapper = document.createElement('div');
+        wrapper.className = 'url-input-wrapper';
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'https://... (URL de la imagen)';
+        input.value = value;
+        input.required = inputs.length === 0; // Solo el primero es obligatorio
+        
+        // Botón para borrar este input específico (opcional, pero útil)
+        /* const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.textContent = 'X';
+        removeBtn.className = 'action-btn delete-btn';
+        removeBtn.onclick = () => wrapper.remove();
+        wrapper.appendChild(removeBtn);
+        */
+
+        wrapper.appendChild(input);
+        urlInputsContainer.appendChild(wrapper);
+    }
+
+    // Iniciar con un input vacío
+    addUrlInput();
+
+    addUrlBtn.addEventListener('click', () => {
+        addUrlInput();
     });
+
     function generateUniqueCode() {
         let code;
         do {
@@ -259,67 +252,78 @@ document.addEventListener('DOMContentLoaded', () => {
         } while (products.find(p => p.code === code));
         return code;
     }
+
     function resetAdminForm() {
         addProductForm.reset();
-        imagePreviewContainer.innerHTML = '';
-        imageDatacUrls = [];
+        urlInputsContainer.innerHTML = ''; // Limpiar inputs
+        addUrlInput(); // Agregar uno vacío
         productEditId.value = '';
         adminFormTitle.textContent = 'Añadir Nuevo Producto';
         saveProductBtn.textContent = 'Guardar Producto';
         cancelEditBtn.classList.add('hidden');
     }
+    
     cancelEditBtn.addEventListener('click', resetAdminForm);
+
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const editingId = productEditId.value;
-        if (!editingId && imageDatacUrls.length === 0) {
-            alert('Por favor, sube al menos una imagen para el nuevo producto.');
+        
+        // Recopilar URLs
+        const inputs = urlInputsContainer.querySelectorAll('input');
+        const imageUrls = [];
+        inputs.forEach(input => {
+            const url = input.value.trim();
+            if (url) imageUrls.push(url);
+        });
+
+        if (imageUrls.length === 0) {
+            alert('Añade al menos una URL de imagen válida.');
             return;
         }
+
         if (!productCategory.value) {
             alert('Por favor, selecciona una categoría.');
             return;
         }
+        
         const productData = {
             title: productTitle.value,
             description: productDesc.value,
             price: parseFloat(productPrice.value),
-            category: productCategory.value
+            category: productCategory.value,
+            images: imageUrls // Guardamos el array de strings (URLs)
         };
+
         let error = null;
         if (editingId) {
-            if (imageDatacUrls.length > 0) {
-                productData.images = imageDatacUrls;
-            }
             const { error: updateError } = await sb.from('products').update(productData).eq('id', editingId);
             error = updateError;
         } else {
             productData.code = generateUniqueCode();
-            productData.images = imageDatacUrls; 
             const { error: insertError } = await sb.from('products').insert([productData]);
             error = insertError;
         }
+
         if (error) {
-            console.error("Error al guardar en Supabase:", error);
-            if (error.message.includes('payload too large')) {
-                alert("Error: ¡Las imágenes son demasiado grandes! \nIntenta con menos imágenes o más pequeñas.");
-            } else {
-                alert("Error al guardar el producto. ¿Estás logueado?");
-            }
+            console.error("Error:", error);
+            alert("Error al guardar. ¿Estás logueado?");
         } else {
             alert(editingId ? '¡Producto actualizado!' : '¡Producto guardado!');
             await loadDataFromServer();
             resetAdminForm();
         }
     });
+
     function renderAdminProductList() {
         adminProductList.innerHTML = '';
         products.forEach(product => {
             const item = document.createElement('div');
             item.className = 'admin-product-item';
-            const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : 'placeholder.jpg';
+            // Usamos la URL directamente
+            const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
             item.innerHTML = `
-                <img src="${imageUrl}" alt="${product.title}">
+                <img src="${imageUrl}" alt="${product.title}" loading="lazy">
                 <div class="admin-product-info">
                     <h4>${product.title}</h4>
                     <p>Cód: ${product.code} | Bs. ${product.price.toFixed(2)}</p>
@@ -332,46 +336,49 @@ document.addEventListener('DOMContentLoaded', () => {
             adminProductList.appendChild(item);
         });
     }
+
     adminProductList.addEventListener('click', async (e) => {
         const id = e.target.dataset.id;
         if (!id) return;
+
         if (e.target.classList.contains('edit-btn')) {
             const product = products.find(p => p.id == id);
             if (!product) return;
+            
             productEditId.value = product.id;
             productTitle.value = product.title;
             productDesc.value = product.description;
             productPrice.value = product.price;
             productCategory.value = product.category;
-            imagePreviewContainer.innerHTML = '';
+            
+            // Cargar URLs en los inputs
+            urlInputsContainer.innerHTML = '';
             if (product.images && product.images.length > 0) {
                 product.images.forEach(url => {
-                    const img = document.createElement('img');
-                    img.src = url;
-                    img.className = 'image-preview-item';
-                    imagePreviewContainer.appendChild(img);
+                    addUrlInput(url);
                 });
+            } else {
+                addUrlInput();
             }
-            imageDatacUrls = [];
+            
             adminFormTitle.textContent = 'Editando Producto';
             saveProductBtn.textContent = 'Actualizar Producto';
             cancelEditBtn.classList.remove('hidden');
             adminView.scrollTo({ top: 0, behavior: 'smooth' });
+        
         } else if (e.target.classList.contains('delete-btn')) {
             if (confirm('¿Estás seguro de que quieres eliminar este producto?')) {
                 const { error } = await sb.from('products').delete().eq('id', id);
-                if (error) { console.error("Error al eliminar:", error); alert('Error de base de datos. ¿Estás logueado?'); }
+                if (error) { alert('Error. ¿Estás logueado?'); }
                 await loadDataFromServer();
             }
         }
     });
 
-
     // =============================================
     //         LÓGICA DE LA TIENDA (USUARIO)
     // =============================================
     
-    // ... (El código de la tienda no cambia) ...
     function renderCategoryFilters() {
         categoryFilters.innerHTML = '';
         const allBtn = document.createElement('button');
@@ -395,6 +402,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
     }
+    
     function renderProducts() {
         productGrid.innerHTML = '';
         const searchTerm = searchInput.value.toLowerCase().trim();
@@ -404,17 +412,23 @@ document.addEventListener('DOMContentLoaded', () => {
             (p.description && p.description.toLowerCase().includes(searchTerm)) || 
             (p.code && p.code.toLowerCase().includes(searchTerm))
         );
+
         if (finalFiltered.length === 0) {
             productGrid.innerHTML = '<p class="no-products">No se encontraron productos.</p>';
             return;
         }
+
         finalFiltered.forEach(product => {
             const card = document.createElement('div');
             card.className = 'product-card';
             card.dataset.id = product.id; 
             const imageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
+            
+            // OPTIMIZACIÓN: loading="lazy"
             card.innerHTML = `
-                <div class="product-image-container"><img src="${imageUrl}" alt="${product.title}" class="product-image"></div>
+                <div class="product-image-container">
+                    <img src="${imageUrl}" alt="${product.title}" class="product-image" loading="lazy">
+                </div>
                 <div class="product-info">
                     <h3 class="product-title">${product.title}</h3>
                     <p class="product-desc-snippet">${product.description}</p>
@@ -426,6 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productGrid.appendChild(card);
         });
     }
+
     searchInput.addEventListener('input', renderProducts);
     productGrid.addEventListener('click', (e) => {
         const card = e.target.closest('.product-card');
@@ -437,6 +452,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showProductDetail(productId);
         }
     });
+
     function showProductDetail(productId) {
         const product = products.find(p => p.id == productId);
         if (!product) return;
@@ -447,6 +463,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         const mainImageUrl = (product.images && product.images.length > 0) ? product.images[0] : '';
+        
         productDetailContent.innerHTML = `
             <button class="close-modal" id="close-detail-modal-inner">×</button>
             <div id="product-detail-gallery">
@@ -463,6 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </div>
         `;
         productDetailModal.classList.remove('hidden');
+        
         const mainImage = document.getElementById('gallery-main-image');
         const thumbnails = document.querySelectorAll('.gallery-thumbnail');
         thumbnails.forEach(thumb => {
@@ -480,6 +498,7 @@ document.addEventListener('DOMContentLoaded', () => {
             productDetailModal.classList.add('hidden');
         });
     }
+    
     productDetailModal.addEventListener('click', (e) => {
         if (e.target === productDetailModal) {
             productDetailModal.classList.add('hidden');
@@ -489,8 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //           LÓGICA DEL CARRITO
     // =============================================
-    
-    // ... (El código del carrito no cambia) ...
     function addToCart(productId) {
         const existingItem = cart.find(item => item.id == productId);
         if (existingItem) {
@@ -558,8 +575,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //           LÓGICA DE CHECKOUT
     // =============================================
-    
-    // ... (El código de checkout con geolocalización no cambia) ...
     const getLocation = () => {
         return new Promise((resolve, reject) => {
             if (!navigator.geolocation) {
@@ -632,57 +647,41 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
     //           INICIALIZACIÓN DE LA APP
     // =============================================
-    
-    // CAMBIO: La inicialización ahora comprueba la sesión de Supabase
     async function loadDataFromServer() {
         if (SUPABASE_URL === 'URL_DE_TU_PROYECTO_SUPABASE' || SUPABASE_KEY === 'TU_LLAVE_PUBLISHABLE_ANON') {
-            document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong> y añade tu URL y Key de Supabase.</p>`;
+            document.body.innerHTML = `<h1>Error de Configuración</h1><p>Por favor, edita el archivo <strong>app.js</strong>.</p>`;
             return;
         }
 
         try {
-            // 1. Cargar sesión, categorías y productos al mismo tiempo
             const [sessionRes, categoriesRes, productsRes] = await Promise.all([
                 sb.auth.getSession(),
                 sb.from('categories').select('*'),
                 sb.from('products').select('*').order('id', { ascending: false })
             ]);
             
-            // 2. Manejar errores de datos (fallará si RLS está mal configurado)
-            const { error: catError } = categoriesRes;
-            const { error: prodError } = productsRes;
-            if (catError) throw catError;
-            if (prodError) throw prodError;
+            if (categoriesRes.error) throw categoriesRes.error;
+            if (productsRes.error) throw productsRes.error;
 
             products = productsRes.data;
             categories = categoriesRes.data;
             
-            // 3. Dibujar la tienda (esto siempre se hace)
             refreshStoreUI();
             updateCartCount();
             
-            // 4. Comprobar si hay una sesión activa
             const { data: { session } } = sessionRes;
-            
             if (session) {
-                // Hay un usuario logueado (es 'admin@sirari.com')
-                // El campo de email del login es de tipo 'text', así que actualízalo
-                // para que el usuario sepa qué poner.
-                usernameInput.placeholder = "Email (admin@sirari.com)";
                 showView(adminView); 
                 refreshAdminUI();
             } else {
-                // No hay usuario logueado
-                usernameInput.placeholder = "Email (admin@sirari.com)";
                 showView(storeView);
             }
 
         } catch (error) {
             console.error("Error al cargar datos de Supabase:", error);
-            document.body.innerHTML = `<h1>Error de Conexión a Base de Datos</h1><p>No se pudo conectar a Supabase. Revisa tu URL/Llave y tus políticas RLS.</p><pre>${error.message}</pre>`;
+            document.body.innerHTML = `<h1>Error de Conexión</h1><pre>${error.message}</pre>`;
         }
     }
     
     loadDataFromServer();
-
 });
