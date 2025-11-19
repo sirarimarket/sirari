@@ -6,6 +6,7 @@
     <title>Sirari</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 </head>
 <body>
 
@@ -24,7 +25,7 @@
 
     <section id="admin-view" class="view hidden">
         <header class="admin-header">
-            <h1>Panel de Administración de SIRARI</h1>
+            <h1>Panel de Administración</h1>
             <button id="admin-logout-btn">Cerrar Sesión</button>
         </header>
         
@@ -54,21 +55,41 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="product-desc">Descripción del Producto:</label>
+                        <label for="product-desc">Descripción:</label>
                         <textarea id="product-desc" required></textarea>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="product-price">Precio (Bs.):</label>
-                        <input type="number" id="product-price" step="0.01" min="0" required>
+                    <div class="form-row">
+                        <div class="form-group half-width">
+                            <label for="product-price">Precio (Bs.):</label>
+                            <input type="number" id="product-price" step="0.01" min="0" required>
+                        </div>
+                        <div class="form-group half-width">
+                            <label for="product-stock">Stock (Cantidad):</label>
+                            <input type="number" id="product-stock" min="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="background: #f9f9f9; padding: 10px; border-radius: 6px;">
+                        <label>Oferta / Descuento (Opcional):</label>
+                        <div class="form-row">
+                            <div class="form-group half-width">
+                                <select id="discount-type">
+                                    <option value="">Sin Oferta</option>
+                                    <option value="percent">Porcentaje (%)</option>
+                                    <option value="fixed">Monto Fijo (Bs)</option>
+                                </select>
+                            </div>
+                            <div class="form-group half-width">
+                                <input type="number" id="discount-value" placeholder="Valor (ej: 10)" min="0" step="0.01">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
-                        <label>Imágenes del Producto (URLs):</label>
-                        <div id="url-inputs-container">
-                            </div>
-                        <button type="button" id="add-url-btn" class="secondary-btn small-btn">+ Agregar URL de Imagen</button>
-                        <small style="display:block; margin-top:5px; color:#666;">Copia y pega el link de la imagen (ej: de Facebook, Imgur, Google Drive público).</small>
+                        <label>Imágenes (URLs):</label>
+                        <div id="url-inputs-container"></div>
+                        <button type="button" id="add-url-btn" class="secondary-btn small-btn">+ Agregar URL</button>
                     </div>
 
                     <div class="form-group">
@@ -78,7 +99,7 @@
                     
                     <div class="admin-form-actions">
                         <button type="submit" id="save-product-btn" class="primary-btn">Guardar Producto</button>
-                        <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancelar Edición</button>
+                        <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancelar</button>
                     </div>
                 </form>
             </section>
@@ -86,7 +107,7 @@
             <hr class="section-divider">
             
             <section id="product-list-section">
-                <h2>Gestionar Productos</h2>
+                <h2>Lista de Productos</h2>
                 <div id="admin-product-list"></div>
             </section>
         </div>
@@ -96,13 +117,11 @@
         <header class="store-header">
             <h1 class="logo">SIRARI</h1>
             <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Buscar por título, descripción o código...">
+                <input type="text" id="search-input" placeholder="Buscar...">
             </div>
             <div class="header-icons">
-                <button id="admin-login-btn" class="icon-btn" title="Admin Login">
-                    <i class="fas fa-user-shield"></i>
-                </button>
-                <button id="cart-btn" class="icon-btn" title="Ver Carrito">
+                <button id="admin-login-btn" class="icon-btn"><i class="fas fa-user-shield"></i></button>
+                <button id="cart-btn" class="icon-btn">
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cart-count">0</span>
                 </button>
@@ -134,17 +153,34 @@
             <div class="modal-content">
                 <button class="close-modal" id="close-checkout-modal">×</button>
                 <h2>Datos de Envío</h2>
+                
                 <form id="checkout-form">
                     <div class="form-group">
-                        <label for="customer-name">Nombre Completo:</label>
+                        <label>Nombre Completo:</label>
                         <input type="text" id="customer-name" required>
                     </div>
                     <div class="form-group">
-                        <label for="customer-location">Tu Dirección o Referencia:</label>
-                        <textarea id="customer-location" rows="3" required></textarea>
+                        <label>Referencia de Dirección:</label>
+                        <textarea id="customer-location" rows="2" required placeholder="Ej: Casa azul, portón negro..."></textarea>
                     </div>
+
+                    <div id="location-question-step">
+                        <p style="margin-bottom: 10px; font-weight: bold;">¿Estás actualmente en el lugar de entrega?</p>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button type="button" id="btn-yes-location" class="secondary-btn" style="width: 100px;">SÍ</button>
+                            <button type="button" id="btn-no-location" class="secondary-btn" style="width: 100px;">NO</button>
+                        </div>
+                    </div>
+
+                    <div id="map-container-wrapper" class="hidden">
+                        <p style="font-size: 0.9rem; color: #666; margin: 10px 0;">Mueve el marcador rojo a tu ubicación exacta:</p>
+                        <div id="delivery-map"></div>
+                        <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="margin-top:10px; width:100%;">Confirmar esta ubicación</button>
+                    </div>
+
                     <p id="location-status" class="location-status-msg"></p> 
-                    <button type="submit" id="checkout-submit-btn" class="primary-btn">Confirmar y Enviar por WhatsApp</button>
+                    
+                    <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
                 </form>
             </div>
         </div>
@@ -152,6 +188,7 @@
     </section>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
 </body>
 </html>
