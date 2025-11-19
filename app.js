@@ -2,8 +2,8 @@
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
 // Pega tu URL y tu Llave aquí
-const SUPABASE_URL = 'URL_DE_TU_PROYECTO_SUPABASE'; 
-const SUPABASE_KEY = 'TU_LLAVE_PUBLISHABLE_ANON'; 
+const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; 
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; 
 
 // Crea el cliente de Supabase
 const { createClient } = supabase;
@@ -685,3 +685,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     loadDataFromServer();
 });
+
