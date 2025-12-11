@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let marker = null;
     let selectedCoordinates = null;
 
-    // --- FORMATO PRECIO ---
+    // --- UTILIDADES ---
     function formatPriceHTML(price) {
         const num = parseFloat(price);
         if (isNaN(num)) return "0,00";
@@ -104,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
             email: usernameInput.value,
             password: passwordInput.value,
         });
-        if (error) loginError.textContent = 'Error de credenciales';
+        if (error) loginError.textContent = 'Credenciales incorrectas';
         else {
             loginError.textContent = '';
             showView('admin');
@@ -112,7 +112,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- URLS IMAGENES ---
+    // --- URLS IMAGENES (ADMIN) ---
     function addUrlInput(value = '') {
         const wrapper = document.createElement('div');
         wrapper.className = 'url-input-wrapper';
@@ -131,7 +131,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     addUrlBtn.addEventListener('click', () => addUrlInput());
 
-    // --- GUARDAR PRODUCTO (CORREGIDO) ---
+    // --- GUARDAR PRODUCTO ---
     addProductForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         
@@ -139,20 +139,15 @@ document.addEventListener('DOMContentLoaded', () => {
         const imageUrls = [];
         inputs.forEach(inp => { if(inp.value.trim()) imageUrls.push(inp.value.trim()); });
         
-        // IMPORTANTE: Convertir a números para evitar error de tipo
-        const stockVal = parseInt(productStock.value) || 0;
-        const priceVal = parseFloat(document.getElementById('product-price').value) || 0;
-        const discValue = parseFloat(discountValue.value) || 0;
-
         const productData = {
             title: document.getElementById('product-title').value,
             description: document.getElementById('product-desc').value,
-            price: priceVal,
-            stock: stockVal,
+            price: parseFloat(document.getElementById('product-price').value) || 0,
+            stock: parseInt(productStock.value) || 0,
             category: document.getElementById('product-category').value,
             images: imageUrls,
             discount_type: discountType.value || null,
-            discount_value: discValue
+            discount_value: parseFloat(discountValue.value) || 0
         };
 
         const editingId = document.getElementById('product-edit-id').value;
@@ -169,16 +164,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             if (error) {
-                console.error(error);
-                // MUESTRA EL ERROR REAL: Esto te dirá si falta la columna 'stock' etc.
-                alert("Error al guardar: " + error.message + "\n\nVerifica que creaste las columnas en Supabase.");
+                alert("Error al guardar: " + error.message);
             } else {
-                alert("Producto guardado correctamente");
-                loadDataFromServer(); // Recargar para ver cambios
+                alert("Producto guardado");
+                loadDataFromServer();
                 resetAdminForm();
             }
         } catch (e) {
-            alert("Error inesperado: " + e.message);
+            alert("Error: " + e.message);
         }
     });
 
@@ -192,25 +185,21 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     document.getElementById('cancel-edit-btn').addEventListener('click', resetAdminForm);
 
-    // --- CATEGORÍAS (CORREGIDO) ---
+    // --- CATEGORÍAS ---
     categoryForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const newName = categoryNameInput.value.trim().toLowerCase();
         if (!newName) return;
         
-        // Evitar duplicados visuales
         if (categories.some(c => c.name === newName)) {
-            alert("La categoría ya existe");
+            alert("Categoría ya existe");
             return;
         }
 
         const { error } = await sb.from('categories').insert([{ name: newName }]);
-        
-        if (error) {
-            alert("Error al crear categoría: " + error.message);
-        } else {
+        if (error) alert(error.message);
+        else {
             categoryNameInput.value = '';
-            // No necesitamos recargar toda la página, solo los datos
             await loadDataFromServer();
             alert("Categoría creada");
         }
@@ -218,11 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderCategoryList() {
         categoryList.innerHTML = '';
-        // Asegurarnos que 'otros' esté visualmente aunque no esté en DB (fallback)
         const listToRender = [...categories];
-        if(!listToRender.find(c => c.name === 'otros')) {
-            listToRender.push({id: 'virtual', name: 'otros'});
-        }
+        if(!listToRender.find(c => c.name === 'otros')) listToRender.push({id: 'virtual', name: 'otros'});
 
         listToRender.forEach(cat => {
             const item = document.createElement('div');
@@ -230,61 +216,87 @@ document.addEventListener('DOMContentLoaded', () => {
             if (cat.name === 'otros') {
                 item.innerHTML = `<span>${cat.name} (Predeterminado)</span>`;
             } else {
-                item.innerHTML = `
-                    <span>${cat.name}</span>
-                    <button class="action-btn delete-btn" data-id="${cat.id}" data-name="${cat.name}">X</button>
-                `;
+                item.innerHTML = `<span>${cat.name}</span> <button class="action-btn delete-btn" data-id="${cat.id}" data-name="${cat.name}">X</button>`;
             }
             categoryList.appendChild(item);
         });
 
-        // Listeners para borrar
         categoryList.querySelectorAll('.delete-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const id = btn.dataset.id;
                 const name = btn.dataset.name;
-                if(confirm(`Borrar categoría "${name}"? Productos irán a "otros".`)) {
-                    // 1. Mover productos
+                if(confirm(`¿Borrar "${name}"? Productos irán a "otros".`)) {
                     await sb.from('products').update({ category: 'otros' }).eq('category', name);
-                    // 2. Borrar categoria
-                    const { error } = await sb.from('categories').delete().eq('id', id);
-                    if(error) alert(error.message);
-                    else loadDataFromServer();
+                    await sb.from('categories').delete().eq('id', id);
+                    loadDataFromServer();
                 }
             });
         });
     }
 
-    // --- TIENDA RENDER ---
-    function renderCategoryFilters() {
-        const container = document.getElementById('category-filters');
-        container.innerHTML = '';
-        
-        const createBtn = (text, val) => {
-            const btn = document.createElement('button');
-            btn.className = `category-filter-btn ${currentCategoryFilter === val ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.onclick = () => {
-                currentCategoryFilter = val;
-                renderCategoryFilters();
-                renderProducts();
-            };
-            container.appendChild(btn);
-        };
+    // --- TIENDA Y DETALLES (AQUÍ ESTÁ LA SOLUCIÓN) ---
+    
+    // Función global para abrir el modal (se llama desde el HTML onclick)
+    window.showProductDetail = (id) => {
+        const p = products.find(x => x.id == id);
+        if(!p) return;
 
-        createBtn('Ver Todos', 'todos');
-
-        // LÓGICA OFERTAS: Solo mostrar si hay productos con descuento
-        const hasOffers = products.some(p => (p.discount_type === 'percent' || p.discount_type === 'fixed') && p.discount_value > 0);
-        if (hasOffers) {
-            createBtn('🔥 Ofertas', 'ofertas');
+        // Construir galería
+        let thumbs = '';
+        if(p.images && p.images.length > 0) {
+            p.images.forEach((url, i) => {
+                 // onmouseover para que cambie al pasar el mouse, o onclick para clic
+                 thumbs += `<img src="${url}" class="gallery-thumbnail ${i===0?'active':''}" onclick="switchMainImage(this, '${url}')">`;
+            });
         }
 
-        categories.forEach(c => createBtn(c.name, c.name));
-        // Asegurar botón otros
-        if(!categories.find(c => c.name === 'otros')) createBtn('otros', 'otros');
-    }
+        const mainImg = p.images && p.images[0] ? p.images[0] : '';
+        const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
 
+        const content = document.getElementById('product-detail-content');
+        
+        // Inyectar HTML del modal
+        content.innerHTML = `
+            <button class="close-modal" onclick="closeDetailModal()">×</button>
+            <div id="product-detail-gallery">
+                <img src="${mainImg}" id="gallery-main-image" style="width:100%; height:300px; object-fit:contain; border:1px solid #eee;">
+                <div id="gallery-thumbnails" style="display:flex; gap:5px; margin-top:10px; overflow-x:auto;">${thumbs}</div>
+            </div>
+            <div id="product-detail-info">
+                <h2 style="font-size:1.8rem; margin-bottom:0.5rem;">${p.title}</h2>
+                <p style="color:#666; font-size:0.9rem; margin-bottom:10px;">Cód: ${p.code}</p>
+                
+                <div style="margin-bottom: 15px;">
+                    ${pricing.hasDiscount 
+                        ? `<span class="original-price" style="text-decoration:line-through; color:#888;">Bs. ${p.price.toFixed(2)}</span> 
+                           <br>
+                           <span class="final-price discounted" style="font-size:1.6rem; color:#D32F2F; font-weight:bold;">Bs. ${formatPriceHTML(pricing.final)}</span>`
+                        : `<span class="final-price" style="font-size:1.6rem; font-weight:bold;">Bs. ${formatPriceHTML(p.price)}</span>`
+                    }
+                </div>
+
+                <p style="margin-bottom:10px;"><b>Stock:</b> ${p.stock > 0 ? p.stock + ' unidades' : '<span style="color:red">Agotado</span>'}</p>
+                <p class="product-full-description" style="white-space: pre-wrap; margin-bottom:20px;">${p.description}</p>
+                
+                <button class="primary-btn" style="width:100%; padding:15px;" onclick="addToCart('${p.id}'); closeDetailModal()">Añadir al Carrito</button>
+            </div>
+        `;
+        
+        document.getElementById('product-detail-modal').classList.remove('hidden');
+    };
+
+    // Funciones auxiliares para el modal (Globales para que el HTML las vea)
+    window.switchMainImage = (thumb, url) => {
+        document.getElementById('gallery-main-image').src = url;
+        document.querySelectorAll('.gallery-thumbnail').forEach(t => t.classList.remove('active'));
+        thumb.classList.add('active'); // Nota: Asegúrate de tener estilo CSS para .active si quieres borde
+    };
+
+    window.closeDetailModal = () => {
+        document.getElementById('product-detail-modal').classList.add('hidden');
+    };
+
+    // --- RENDERIZADO PRODUCTOS ---
     function renderProducts() {
         const grid = document.getElementById('product-grid');
         grid.innerHTML = '';
@@ -297,10 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return currentCategoryFilter === 'todos' || p.category === currentCategoryFilter;
         });
 
-        filtered = filtered.filter(p => 
-            p.title.toLowerCase().includes(searchTerm) || 
-            p.code.toLowerCase().includes(searchTerm)
-        );
+        filtered = filtered.filter(p => p.title.toLowerCase().includes(searchTerm) || p.code.toLowerCase().includes(searchTerm));
 
         if (filtered.length === 0) {
             grid.innerHTML = '<p>No se encontraron productos.</p>';
@@ -328,13 +337,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<div class="price-container"><span class="original-price">Bs. ${p.price.toFixed(2)}</span><span class="final-price discounted">Bs. ${formatPriceHTML(pricing.final)}</span></div>`
                 : `<div class="price-container"><span class="final-price">Bs. ${formatPriceHTML(p.price)}</span></div>`;
 
+            // AQUÍ AGREGUÉ EL ONCLICK para abrir detalles
             card.innerHTML = `
                 ${badgeHTML}
-                <div class="product-image-container">
+                <div class="product-image-container" onclick="showProductDetail('${p.id}')" style="cursor:pointer;">
                     <img src="${(p.images && p.images[0]) || ''}" class="product-image" loading="lazy">
                 </div>
                 <div class="product-info">
-                    <h3 class="product-title">${p.title}</h3>
+                    <h3 class="product-title" onclick="showProductDetail('${p.id}')" style="cursor:pointer;">${p.title}</h3>
                     <p class="product-code">${p.code}</p>
                     ${priceHTML}
                     ${stockHTML}
@@ -345,8 +355,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- CARRITO & CHECKOUT (MAPA LEAFLET) ---
-    window.addToCart = (productId) => { // Global para onclick string
+    function renderCategoryFilters() {
+        const container = document.getElementById('category-filters');
+        container.innerHTML = '';
+        
+        const createBtn = (text, val) => {
+            const btn = document.createElement('button');
+            btn.className = `category-filter-btn ${currentCategoryFilter === val ? 'active' : ''}`;
+            btn.textContent = text;
+            btn.onclick = () => {
+                currentCategoryFilter = val;
+                renderCategoryFilters();
+                renderProducts();
+            };
+            container.appendChild(btn);
+        };
+
+        createBtn('Ver Todos', 'todos');
+        const hasOffers = products.some(p => (p.discount_type === 'percent' || p.discount_type === 'fixed') && p.discount_value > 0);
+        if (hasOffers) createBtn('🔥 Ofertas', 'ofertas');
+
+        categories.forEach(c => createBtn(c.name, c.name));
+        if(!categories.find(c => c.name === 'otros')) createBtn('otros', 'otros');
+    }
+
+    // --- CARRITO & CHECKOUT (MAPA) ---
+    window.addToCart = (productId) => { 
         const prod = products.find(p => p.id == productId);
         if (!prod) return;
         const existing = cart.find(i => i.id == productId);
@@ -458,7 +492,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('checkout-modal').classList.remove('hidden');
     });
 
+    // Cerrar modal al hacer clic fuera o en X
     document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', (e) => e.target.closest('.modal').classList.add('hidden')));
+    document.getElementById('product-detail-modal').addEventListener('click', (e) => {
+        if(e.target.id === 'product-detail-modal') closeDetailModal();
+    });
+
 
     // --- CARGA INICIAL ---
     async function loadDataFromServer() {
@@ -526,7 +565,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function fillCategorySelect() {
         const sel = document.getElementById('product-category');
         sel.innerHTML = '';
-        // Asegurar que 'otros' aparezca en el select también
         const cats = [...categories];
         if(!cats.find(c => c.name === 'otros')) cats.push({name: 'otros'});
         cats.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
@@ -537,4 +575,3 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadDataFromServer();
 });
-
