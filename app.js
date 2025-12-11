@@ -4,6 +4,7 @@
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // Pon tu URL aquí
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // Pon tu Key aquí
 
+
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -33,8 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Admin Categories
     const categoryForm = document.getElementById('category-form');
     const categoryNameInput = document.getElementById('category-name-input');
-    const categoryEditId = document.getElementById('category-edit-id');
-    const categorySaveBtn = document.getElementById('category-save-btn');
     const categoryList = document.getElementById('category-list');
 
     // Checkout & Map
@@ -234,62 +233,82 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- TIENDA Y DETALLES (AQUÍ ESTÁ LA SOLUCIÓN) ---
+    // --- TIENDA Y DETALLES (AQUÍ ESTÁN LOS CAMBIOS) ---
     
-    // Función global para abrir el modal (se llama desde el HTML onclick)
+    // Variable para controlar cantidad en el modal detalle
+    let currentDetailQty = 1;
+
     window.showProductDetail = (id) => {
         const p = products.find(x => x.id == id);
         if(!p) return;
 
-        // Construir galería
+        // Reiniciar cantidad
+        currentDetailQty = 1;
+
+        // Construir galería thumbnails
         let thumbs = '';
         if(p.images && p.images.length > 0) {
             p.images.forEach((url, i) => {
-                 // onmouseover para que cambie al pasar el mouse, o onclick para clic
                  thumbs += `<img src="${url}" class="gallery-thumbnail ${i===0?'active':''}" onclick="switchMainImage(this, '${url}')">`;
             });
         }
 
         const mainImg = p.images && p.images[0] ? p.images[0] : '';
         const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
+        const maxStock = p.stock > 0 ? p.stock : 1; // Para evitar bloqueos si stock es 0 visualmente
 
         const content = document.getElementById('product-detail-content');
         
-        // Inyectar HTML del modal
         content.innerHTML = `
             <button class="close-modal" onclick="closeDetailModal()">×</button>
             <div id="product-detail-gallery">
-                <img src="${mainImg}" id="gallery-main-image" style="width:100%; height:300px; object-fit:contain; border:1px solid #eee;">
-                <div id="gallery-thumbnails" style="display:flex; gap:5px; margin-top:10px; overflow-x:auto;">${thumbs}</div>
+                <img src="${mainImg}" id="gallery-main-image">
+                <div id="gallery-thumbnails">${thumbs}</div>
             </div>
             <div id="product-detail-info">
-                <h2 style="font-size:1.8rem; margin-bottom:0.5rem;">${p.title}</h2>
+                <h2 style="font-size:1.6rem; margin-bottom:0.5rem;">${p.title}</h2>
                 <p style="color:#666; font-size:0.9rem; margin-bottom:10px;">Cód: ${p.code}</p>
                 
                 <div style="margin-bottom: 15px;">
                     ${pricing.hasDiscount 
                         ? `<span class="original-price" style="text-decoration:line-through; color:#888;">Bs. ${p.price.toFixed(2)}</span> 
                            <br>
-                           <span class="final-price discounted" style="font-size:1.6rem; color:#D32F2F; font-weight:bold;">Bs. ${formatPriceHTML(pricing.final)}</span>`
-                        : `<span class="final-price" style="font-size:1.6rem; font-weight:bold;">Bs. ${formatPriceHTML(p.price)}</span>`
+                           <span class="final-price discounted" style="font-size:1.5rem; color:#D32F2F; font-weight:bold;">Bs. ${formatPriceHTML(pricing.final)}</span>`
+                        : `<span class="final-price" style="font-size:1.5rem; font-weight:bold;">Bs. ${formatPriceHTML(p.price)}</span>`
                     }
                 </div>
 
                 <p style="margin-bottom:10px;"><b>Stock:</b> ${p.stock > 0 ? p.stock + ' unidades' : '<span style="color:red">Agotado</span>'}</p>
-                <p class="product-full-description" style="white-space: pre-wrap; margin-bottom:20px;">${p.description}</p>
+                <p class="product-full-description" style="white-space: pre-wrap; margin-bottom:20px; font-size: 0.95rem;">${p.description}</p>
                 
-                <button class="primary-btn" style="width:100%; padding:15px;" onclick="addToCart('${p.id}'); closeDetailModal()">Añadir al Carrito</button>
+                <div class="detail-actions">
+                    <div class="qty-selector">
+                        <button class="qty-btn" onclick="updateDetailQty(-1)">-</button>
+                        <input type="text" id="detail-qty-input" class="qty-input" value="1" readonly>
+                        <button class="qty-btn" onclick="updateDetailQty(1, ${maxStock})">+</button>
+                    </div>
+
+                    <button class="primary-btn" style="flex-grow:1; padding:12px;" onclick="addToCart('${p.id}', currentDetailQty); closeDetailModal()">Añadir al Carrito</button>
+                </div>
             </div>
         `;
         
         document.getElementById('product-detail-modal').classList.remove('hidden');
     };
 
-    // Funciones auxiliares para el modal (Globales para que el HTML las vea)
+    // Funciones del Modal Detalle
     window.switchMainImage = (thumb, url) => {
         document.getElementById('gallery-main-image').src = url;
         document.querySelectorAll('.gallery-thumbnail').forEach(t => t.classList.remove('active'));
-        thumb.classList.add('active'); // Nota: Asegúrate de tener estilo CSS para .active si quieres borde
+        thumb.classList.add('active');
+    };
+
+    window.updateDetailQty = (change, max = 999) => {
+        let newQty = currentDetailQty + change;
+        if(newQty < 1) newQty = 1;
+        if(newQty > max) newQty = max;
+        currentDetailQty = newQty;
+        document.getElementById('detail-qty-input').value = currentDetailQty;
     };
 
     window.closeDetailModal = () => {
@@ -320,6 +339,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const card = document.createElement('div');
             card.className = 'product-card';
             
+            // HACER CLIC EN LA TARJETA ABRE DETALLE
+            card.onclick = (e) => {
+                // Si el clic NO fue en el botón de añadir al carrito, abrimos detalle
+                if (!e.target.classList.contains('add-to-cart-btn')) {
+                    showProductDetail(p.id);
+                }
+            };
+            
             const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
             
             let badgeHTML = '';
@@ -337,18 +364,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<div class="price-container"><span class="original-price">Bs. ${p.price.toFixed(2)}</span><span class="final-price discounted">Bs. ${formatPriceHTML(pricing.final)}</span></div>`
                 : `<div class="price-container"><span class="final-price">Bs. ${formatPriceHTML(p.price)}</span></div>`;
 
-            // AQUÍ AGREGUÉ EL ONCLICK para abrir detalles
             card.innerHTML = `
                 ${badgeHTML}
-                <div class="product-image-container" onclick="showProductDetail('${p.id}')" style="cursor:pointer;">
+                <div class="product-image-container">
                     <img src="${(p.images && p.images[0]) || ''}" class="product-image" loading="lazy">
                 </div>
                 <div class="product-info">
-                    <h3 class="product-title" onclick="showProductDetail('${p.id}')" style="cursor:pointer;">${p.title}</h3>
+                    <h3 class="product-title">${p.title}</h3>
                     <p class="product-code">${p.code}</p>
                     ${priceHTML}
                     ${stockHTML}
-                    <button class="add-to-cart-btn primary-btn" onclick="addToCart('${p.id}')">Añadir al Carrito</button>
+                    <button class="add-to-cart-btn primary-btn" onclick="event.stopPropagation(); addToCart('${p.id}')">Añadir al Carrito</button>
                 </div>
             `;
             grid.appendChild(card);
@@ -379,23 +405,111 @@ document.addEventListener('DOMContentLoaded', () => {
         if(!categories.find(c => c.name === 'otros')) createBtn('otros', 'otros');
     }
 
-    // --- CARRITO & CHECKOUT (MAPA) ---
-    window.addToCart = (productId) => { 
+    // --- CARRITO & CHECKOUT ---
+    
+    // Función Añadir al Carrito (Acepta cantidad)
+    window.addToCart = (productId, qty = 1) => { 
         const prod = products.find(p => p.id == productId);
         if (!prod) return;
+        
+        // Verificar stock simple
+        if (prod.stock < 1) {
+            alert("Producto agotado");
+            return;
+        }
+
         const existing = cart.find(i => i.id == productId);
-        if (existing) existing.quantity++;
-        else {
+        if (existing) {
+            // Comprobar si al sumar supera stock
+            if (existing.quantity + qty > prod.stock) {
+                alert("No hay suficiente stock disponible.");
+                return;
+            }
+            existing.quantity += qty;
+        } else {
+            if (qty > prod.stock) {
+                alert("No hay suficiente stock disponible.");
+                return;
+            }
             const pricing = calculateFinalPrice(prod.price, prod.discount_type, prod.discount_value);
             cart.push({
-                id: prod.id, title: prod.title, price: pricing.final,
-                code: prod.code, image: prod.images?.[0] || '', quantity: 1
+                id: prod.id, 
+                title: prod.title, 
+                price: pricing.final,
+                code: prod.code, 
+                image: prod.images?.[0] || '', 
+                quantity: qty,
+                maxStock: prod.stock // Guardamos stock maximo para control en carrito
             });
         }
         saveCart();
-        alert("Producto añadido");
+        alert(`Añadido: ${qty} unidad(es)`);
     };
 
+    // Función para cambiar cantidad desde el carrito
+    window.changeCartQty = (idx, change) => {
+        const item = cart[idx];
+        const newQty = item.quantity + change;
+        
+        // Validaciones
+        if (newQty < 1) return; // Mínimo 1
+        if (newQty > item.maxStock) {
+            alert("Stock máximo alcanzado");
+            return;
+        }
+        
+        item.quantity = newQty;
+        saveCart();
+        renderCartHTML(); // Re-renderizar solo el carrito
+    };
+
+    // Función Renderizar Carrito HTML (Nuevo Diseño Horizontal)
+    function renderCartHTML() {
+        const list = document.getElementById('cart-items');
+        list.innerHTML = '';
+        let total = 0;
+        
+        if (cart.length === 0) {
+            list.innerHTML = "<p style='text-align:center; padding:20px;'>Tu carrito está vacío</p>";
+        }
+
+        cart.forEach((item, idx) => {
+            const subtotal = item.price * item.quantity;
+            total += subtotal;
+            
+            list.innerHTML += `
+                <div class="cart-item">
+                    <img src="${item.image}" class="cart-item-img">
+                    
+                    <div class="cart-item-info">
+                        <div class="cart-item-title">${item.title}</div>
+                        <div class="cart-item-price">Bs. ${item.price.toFixed(2)}</div>
+                    </div>
+
+                    <div class="cart-qty-selector">
+                        <button class="cart-qty-btn" onclick="changeCartQty(${idx}, -1)">-</button>
+                        <div class="cart-qty-value">${item.quantity}</div>
+                        <button class="cart-qty-btn" onclick="changeCartQty(${idx}, 1)">+</button>
+                    </div>
+
+                    <button class="cart-remove-btn" onclick="cart.splice(${idx},1); saveCart(); renderCartHTML();">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+        });
+        
+        document.getElementById('cart-total').textContent = total.toFixed(2);
+        document.getElementById('checkout-btn').disabled = cart.length === 0;
+    }
+
+    // Listener para abrir carrito
+    document.getElementById('cart-btn').addEventListener('click', () => {
+        renderCartHTML();
+        document.getElementById('cart-modal').classList.remove('hidden');
+    });
+
+    // MAPA Logic (Sin cambios mayores)
     function initMap() {
         const defaultLat = -17.7833; 
         const defaultLng = -63.1821;
@@ -473,31 +587,15 @@ document.addEventListener('DOMContentLoaded', () => {
         locationStatus.textContent = '';
     }
 
-    // --- MODALES GENERICOS ---
-    document.getElementById('cart-btn').addEventListener('click', () => {
-        const list = document.getElementById('cart-items');
-        list.innerHTML = '';
-        let total = 0;
-        cart.forEach((item, idx) => {
-            total += item.price * item.quantity;
-            list.innerHTML += `<div class="cart-item"><img src="${item.image}" style="width:50px;"><div><b>${item.title}</b><br>Bs. ${item.price.toFixed(2)}</div><button onclick="cart.splice(${idx},1); saveCart(); document.getElementById('cart-btn').click()">X</button></div>`;
-        });
-        document.getElementById('cart-total').textContent = total.toFixed(2);
-        document.getElementById('cart-modal').classList.remove('hidden');
-        document.getElementById('checkout-btn').disabled = cart.length === 0;
-    });
-
     document.getElementById('checkout-btn').addEventListener('click', () => {
         document.getElementById('cart-modal').classList.add('hidden');
         document.getElementById('checkout-modal').classList.remove('hidden');
     });
 
-    // Cerrar modal al hacer clic fuera o en X
     document.querySelectorAll('.close-modal').forEach(b => b.addEventListener('click', (e) => e.target.closest('.modal').classList.add('hidden')));
     document.getElementById('product-detail-modal').addEventListener('click', (e) => {
         if(e.target.id === 'product-detail-modal') closeDetailModal();
     });
-
 
     // --- CARGA INICIAL ---
     async function loadDataFromServer() {
