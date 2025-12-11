@@ -75,7 +75,6 @@ button:active { transform: scale(0.98); }
 
 /* GRILLA PRODUCTOS */
 .product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 1.5rem; padding: 2rem; max-width: 1400px; margin: 0 auto; }
-/* Tarjeta con cursor pointer para indicar que se puede abrir */
 .product-card { 
     background: white; border-radius: 8px; box-shadow: var(--sombra); overflow: hidden; display: flex; flex-direction: column; transition: 0.2s; position: relative; cursor: pointer;
 }
@@ -118,152 +117,66 @@ button:active { transform: scale(0.98); }
 .admin-product-item { display: flex; gap: 10px; padding: 10px; border: 1px solid #eee; border-radius: 6px; margin-bottom: 10px; align-items: center; }
 .admin-product-item img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; }
 
-/* ======================================================== */
-/* NUEVOS ESTILOS PARA DETALLE DE PRODUCTO Y CARRITO */
-/* ======================================================== */
-
 /* Detalle de Producto */
 #product-detail-content { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: start; }
-@media (max-width: 700px) {
-    #product-detail-content { grid-template-columns: 1fr; gap: 1rem; }
-}
+@media (max-width: 700px) { #product-detail-content { grid-template-columns: 1fr; gap: 1rem; } }
 
-/* Galería de Imagenes */
 #product-detail-gallery { display: flex; flex-direction: column; align-items: center; }
-#gallery-main-image { 
-    width: 100%; 
-    max-height: 40vh; /* Ajuste para que no sea gigante */
-    object-fit: contain; 
-    border-radius: 8px; 
-    background-color: #f9f9f9;
-}
-#gallery-thumbnails { 
-    display: flex; 
-    gap: 10px; 
-    margin-top: 15px; 
-    justify-content: center; 
-    flex-wrap: wrap; 
-}
-.gallery-thumbnail { 
-    width: 60px; 
-    height: 60px; 
-    object-fit: cover; 
-    border: 2px solid transparent; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    opacity: 0.7;
-    transition: 0.2s;
-}
-.gallery-thumbnail.active { 
-    border-color: var(--color-principal); 
-    opacity: 1; 
-}
+#gallery-main-image { width: 100%; max-height: 40vh; object-fit: contain; border-radius: 8px; background-color: #f9f9f9; }
+#gallery-thumbnails { display: flex; gap: 10px; margin-top: 15px; justify-content: center; flex-wrap: wrap; }
+.gallery-thumbnail { width: 60px; height: 60px; object-fit: cover; border: 2px solid transparent; border-radius: 4px; cursor: pointer; opacity: 0.7; transition: 0.2s; }
+.gallery-thumbnail.active { border-color: var(--color-principal); opacity: 1; }
 .gallery-thumbnail:hover { opacity: 1; }
 
-/* Selector de Cantidad (Generico) */
-.qty-selector {
-    display: flex;
-    align-items: center;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    overflow: hidden;
-    width: fit-content;
-}
-.qty-btn {
-    background: #eee;
-    border: none;
-    padding: 8px 15px;
-    font-weight: bold;
-    font-size: 1.1rem;
-    cursor: pointer;
-}
+.qty-selector { display: flex; align-items: center; border: 1px solid #ccc; border-radius: 6px; overflow: hidden; width: fit-content; }
+.qty-btn { background: #eee; border: none; padding: 8px 15px; font-weight: bold; font-size: 1.1rem; cursor: pointer; }
 .qty-btn:hover { background: #e0e0e0; }
-.qty-input {
-    width: 40px;
-    text-align: center;
-    border: none;
-    font-size: 1rem;
-    font-weight: bold;
-    pointer-events: none; /* El usuario usa los botones */
-}
+.qty-input { width: 40px; text-align: center; border: none; font-size: 1rem; font-weight: bold; pointer-events: none; }
 
-/* Controles de Acción en Modal */
-.detail-actions {
-    display: flex;
-    gap: 10px;
-    margin-top: 20px;
-    align-items: center;
-}
+.detail-actions { display: flex; gap: 10px; margin-top: 20px; align-items: center; }
 
-/* CARRITO DE COMPRAS (Nuevo Diseño) */
+/* CARRITO */
 .cart-modal-content { max-width: 600px; }
-
-/* Item del Carrito: Fila Horizontal */
-.cart-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    margin-bottom: 10px;
-    background: #fff;
-    gap: 10px;
-}
-
-.cart-item-img {
-    width: 60px;
-    height: 60px;
-    object-fit: cover; /* Recorte cuadrado perfecto */
-    border-radius: 4px;
-    background: #f5f5f5;
-    flex-shrink: 0; /* No encoger imagen */
-}
-
-.cart-item-info {
-    flex-grow: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    overflow: hidden; /* Para textos largos */
-}
-
-.cart-item-title {
-    font-weight: bold;
-    font-size: 1rem;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.cart-item-price {
-    color: var(--color-principal);
-    font-size: 0.95rem;
-}
-
-/* Selector de cantidad pequeño para el carrito */
-.cart-qty-selector {
-    display: flex;
-    border: 1px solid #eee;
-    border-radius: 4px;
-}
-.cart-qty-btn {
-    background: #f9f9f9;
-    border: none;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-weight: bold;
-}
-.cart-qty-value {
-    padding: 5px 10px;
-    font-size: 0.9rem;
-    background: #fff;
-}
-.cart-remove-btn {
-    background: none;
-    border: none;
-    color: #999;
-    font-size: 1.2rem;
-    padding: 0 10px;
-    cursor: pointer;
-}
+.cart-item { display: flex; align-items: center; justify-content: space-between; padding: 10px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 10px; background: #fff; gap: 10px; }
+.cart-item-img { width: 60px; height: 60px; object-fit: cover; border-radius: 4px; background: #f5f5f5; flex-shrink: 0; }
+.cart-item-info { flex-grow: 1; display: flex; flex-direction: column; justify-content: center; overflow: hidden; }
+.cart-item-title { font-weight: bold; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cart-item-price { color: var(--color-principal); font-size: 0.95rem; }
+.cart-qty-selector { display: flex; border: 1px solid #eee; border-radius: 4px; }
+.cart-qty-btn { background: #f9f9f9; border: none; padding: 5px 10px; cursor: pointer; font-weight: bold; }
+.cart-qty-value { padding: 5px 10px; font-size: 0.9rem; background: #fff; }
+.cart-remove-btn { background: none; border: none; color: #999; font-size: 1.2rem; padding: 0 10px; cursor: pointer; }
 .cart-remove-btn:hover { color: var(--color-principal); }
+
+/* ======================================================== */
+/* NUEVO: ESTILOS TOAST (NOTIFICACIÓN) */
+/* ======================================================== */
+.toast-notification {
+    visibility: hidden;
+    min-width: 250px;
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    border-radius: 4px;
+    padding: 16px;
+    position: fixed;
+    z-index: 3000; /* Encima de todo */
+    left: 50%;
+    top: 30px; /* Arriba */
+    transform: translateX(-50%);
+    font-size: 1rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    opacity: 0;
+    transition: opacity 0.3s, top 0.3s;
+}
+
+.toast-notification.show {
+    visibility: visible;
+    opacity: 1;
+    top: 50px; /* Efecto bajada */
+}
+
+/* Color éxito */
+.toast-success { background-color: #4CAF50; }
+/* Color error */
+.toast-error { background-color: #D32F2F; }
