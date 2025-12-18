@@ -100,7 +100,10 @@
                 <button id="about-us-btn" class="icon-btn desktop-only" title="Sobre Nosotros">
                     <i class="fas fa-info-circle"></i>
                 </button>
-                <button id="admin-login-btn" class="icon-btn"><i class="fas fa-user-shield"></i></button>
+                <button id="admin-login-btn" class="icon-btn desktop-only" title="Admin Panel">
+                    <i class="fas fa-user-shield"></i>
+                </button>
+                
                 <button id="cart-btn" class="icon-btn">
                     <i class="fas fa-shopping-cart"></i>
                     <span id="cart-count">0</span>
@@ -118,11 +121,15 @@
             </div>
             <div class="sidebar-content">
                 <div class="search-bar mobile-search-container">
-                    <input type="text" id="mobile-search-input" placeholder="Buscar...">
+                    <input type="text" id="mobile-search-input" placeholder="Buscar y presionar Enter...">
                 </div>
                 
                 <a href="#footer-section" class="sidebar-link" id="mobile-about-link">Sobre Nosotros</a>
                 
+                <button id="mobile-admin-link" class="sidebar-link" style="text-align:left; cursor:pointer;">
+                    <i class="fas fa-user-shield" style="margin-right:8px;"></i> Acceso Admin
+                </button>
+
                 <div class="sidebar-accordion">
                     <button id="mobile-cats-toggle" class="sidebar-link accordion-btn">
                         Categorías <i class="fas fa-chevron-down"></i>
@@ -138,9 +145,7 @@
 
         <main>
             <div id="product-grid" class="product-grid"></div>
-            
-            <div id="pagination-controls" class="pagination-container">
-                </div>
+            <div id="pagination-controls" class="pagination-container"></div>
         </main>
 
         <footer id="footer-section">
@@ -155,7 +160,8 @@
                         <a href="https://facebook.com" target="_blank" class="social-link fb"><i class="fab fa-facebook-f"></i></a>
                         <a href="https://instagram.com" target="_blank" class="social-link ig"><i class="fab fa-instagram"></i></a>
                         <a href="https://tiktok.com" target="_blank" class="social-link tk"><i class="fab fa-tiktok"></i></a>
-                        <a href="https://twitter.com" target="_blank" class="social-link tw"><i class="fab fa-x-twitter"></i></a> <a href="https://wa.me/59173164833" target="_blank" class="social-link wa"><i class="fab fa-whatsapp"></i></a>
+                        <a href="https://twitter.com" target="_blank" class="social-link tw"><i class="fab fa-x-twitter"></i></a>
+                        <a href="https://wa.me/59173164833" target="_blank" class="social-link wa"><i class="fab fa-whatsapp"></i></a>
                         <a href="mailto:info@sirari.com" class="social-link em"><i class="fas fa-envelope"></i></a>
                     </div>
                 </div>
