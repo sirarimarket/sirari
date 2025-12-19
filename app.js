@@ -4,7 +4,6 @@
 const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // Pon tu URL aquí
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // Pon tu Key aquí
 
-
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -31,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const mobileCatsToggle = document.getElementById('mobile-cats-toggle');
     const mobileCatsContent = document.getElementById('mobile-cats-content');
     const mobileAboutLink = document.getElementById('mobile-about-link');
-    const mobileAdminLink = document.getElementById('mobile-admin-link'); // NUEVO
+    const mobileAdminLink = document.getElementById('mobile-admin-link'); 
     const desktopAboutBtn = document.getElementById('about-us-btn');
 
     const loginForm = document.getElementById('login-form');
@@ -77,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
     desktopAboutBtn.onclick = scrollToFooter;
     mobileAboutLink.onclick = (e) => { e.preventDefault(); scrollToFooter(); };
 
-    // Login logic (Desktop y Mobile comparten showView('login'))
+    // Login logic
     document.getElementById('admin-login-btn').onclick = () => showView('login');
-    mobileAdminLink.onclick = () => { toggleSidebar(false); showView('login'); }; // NUEVO: Admin desde menu movil
+    mobileAdminLink.onclick = () => { toggleSidebar(false); showView('login'); }; 
     document.getElementById('go-to-store-btn').onclick = () => showView('store');
     document.getElementById('admin-logout-btn').onclick = async () => { await sb.auth.signOut(); showView('login'); };
     
@@ -101,14 +100,11 @@ document.addEventListener('DOMContentLoaded', () => {
         // CERRAR SIDEBAR SI ES ENTER
         if (e.key === 'Enter') {
             toggleSidebar(false);
-            // Opcional: Quitar el foco para cerrar teclado en movil
             searchInputMob.blur();
         }
     };
     searchInputDesk.addEventListener('input', handleSearch);
-    
-    // Para movil, usamos keyup para detectar Enter
-    searchInputMob.addEventListener('keyup', handleSearch);
+    searchInputMob.addEventListener('keyup', handleSearch); 
 
     // --- RENDERIZADO ---
     function renderProducts() {
@@ -119,6 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let filtered = products.filter(p => {
             if (currentCategoryFilter === 'ofertas') { if (!(p.discount_type && p.discount_value > 0)) return false; }
             else if (currentCategoryFilter !== 'todos' && p.category !== currentCategoryFilter) return false;
+            // IMPORTANTE: Ahora el filtro de texto se aplica SOBRE la categoría seleccionada
             if (term && !p.title.toLowerCase().includes(term) && !p.code.toLowerCase().includes(term)) return false;
             return true;
         });
@@ -220,19 +217,55 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sess.data.session) { showView('admin'); renderCategoryList(); renderAdminList(); fillCategorySelect(); } else { showView('store'); }
     }
 
+    // --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
+    // Reseteamos el buscador al hacer clic en una categoría
     function renderCategoryFilters() {
         const c = document.getElementById('category-filters'); c.innerHTML = '';
-        const add = (t,v) => { const b = document.createElement('button'); b.className=`category-filter-btn ${currentCategoryFilter===v?'active':''}`; b.textContent=t; b.onclick=()=>{currentCategoryFilter=v; currentPage=1; renderCategoryFilters(); renderMobileCategories(); renderProducts();}; c.appendChild(b); };
+        const add = (t,v) => { 
+            const b = document.createElement('button'); 
+            b.className=`category-filter-btn ${currentCategoryFilter===v?'active':''}`; 
+            b.textContent=t; 
+            b.onclick=()=>{
+                // 1. Limpiar buscador
+                searchInputDesk.value = '';
+                searchInputMob.value = '';
+                // 2. Filtrar
+                currentCategoryFilter=v; 
+                currentPage=1; 
+                renderCategoryFilters(); 
+                renderMobileCategories(); 
+                renderProducts();
+            }; 
+            c.appendChild(b); 
+        };
         add('Ver Todos','todos'); if(products.some(p=>(p.discount_type&&p.discount_value>0))) add('🔥 Ofertas','ofertas'); categories.forEach(x=>add(x.name,x.name)); if(!categories.find(x=>x.name==='otros')) add('otros','otros');
     }
     
     function renderMobileCategories() {
         mobileCatsContent.innerHTML = '';
-        const add = (t,v) => { const b = document.createElement('button'); b.className='sidebar-link'; b.style.textAlign='left'; b.innerHTML=(currentCategoryFilter===v?`<b>${t}</b>`:t); b.onclick=()=>{currentCategoryFilter=v; currentPage=1; renderCategoryFilters(); renderMobileCategories(); renderProducts(); toggleSidebar(false);}; mobileCatsContent.appendChild(b); };
+        const add = (t,v) => { 
+            const b = document.createElement('button'); 
+            b.className='sidebar-link'; 
+            b.style.textAlign='left'; 
+            b.innerHTML=(currentCategoryFilter===v?`<b>${t}</b>`:t); 
+            b.onclick=()=>{
+                // 1. Limpiar buscador
+                searchInputDesk.value = '';
+                searchInputMob.value = '';
+                // 2. Filtrar
+                currentCategoryFilter=v; 
+                currentPage=1; 
+                renderCategoryFilters(); 
+                renderMobileCategories(); 
+                renderProducts(); 
+                toggleSidebar(false);
+            }; 
+            mobileCatsContent.appendChild(b); 
+        };
         add('Ver Todos','todos'); if(products.some(p=>(p.discount_type&&p.discount_value>0))) add('🔥 Ofertas','ofertas'); categories.forEach(x=>add(x.name,x.name)); if(!categories.find(x=>x.name==='otros')) add('otros','otros');
     }
 
-    // --- CARRITO, ADMIN, MAPA... (Mismo código que antes, resumido por espacio pero funcional) ---
+    // --- CARRITO, ADMIN, MAPA... ---
     window.addToCart=(id,q)=>{ q=parseInt(q)||1; const p=products.find(x=>x.id==id); if(!p||p.stock<1)return showToast("Agotado","error"); const ex=cart.find(i=>i.id==id); if(ex){if(ex.quantity+q>p.stock)return showToast("Stock insuficiente","error"); ex.quantity+=q;}else{if(q>p.stock)return showToast("Stock insuficiente","error"); const pr=calculateFinalPrice(p.price,p.discount_type,p.discount_value); cart.push({id:p.id,title:p.title,price:pr.final,image:p.images?.[0]||'',quantity:q,maxStock:p.stock});} saveCart(); showToast("Añadido"); };
     window.changeCartQty=(i,d)=>{const it=cart[i]; const n=it.quantity+d; if(n<1||n>it.maxStock)return; it.quantity=n; saveCart(); renderCartHTML();};
     window.removeFromCart=(i)=>{cart.splice(i,1); saveCart(); renderCartHTML(); showToast("Eliminado");};
