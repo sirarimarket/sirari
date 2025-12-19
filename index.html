@@ -3,217 +3,515 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirari</title>
-    <link rel="icon" href="TU_URL_DEL_FAVICON.png" type="image/png">
-    
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <title>Sirari - Panel de Administración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        /* Estilos para ocultar/mostrar secciones */
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+        .sidebar-link.active { background-color: #f3f4f6; color: #4f46e5; border-right: 3px solid #4f46e5; }
+    </style>
 </head>
-<body>
+<body class="h-screen flex overflow-hidden">
 
-    <section id="login-view" class="view hidden">
-        <div class="login-container">
-            <h1>SIRARI - Admin</h1>
-            <form id="login-form">
-                <input type="text" id="username" placeholder="Email (admin@sirari.com)" required>
-                <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="submit">Ingresar</button>
-            </form>
-            <p id="login-error" class="error-msg"></p>
-            <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
+    <aside class="w-64 bg-white shadow-md flex flex-col justify-between z-10">
+        <div>
+            <div class="h-16 flex items-center px-8 border-b border-gray-100">
+                <i class="fa-solid fa-infinity text-indigo-600 text-2xl mr-2"></i>
+                <span class="text-xl font-bold text-gray-800">Sirari</span>
+            </div>
+
+            <div class="p-6 border-b border-gray-100">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Usuario</p>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
+                        A
+                    </div>
+                    <div>
+                        <p class="text-sm font-bold text-gray-800">Admin</p>
+                        <p class="text-xs text-gray-500">Principal</p>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="mt-4 flex-1 overflow-y-auto">
+                <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Gestión</p>
+                
+                <a href="#" onclick="showSection('agregar')" id="nav-agregar" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-plus w-5"></i>
+                    <span class="font-medium">AGREGAR</span>
+                </a>
+
+                <a href="#" onclick="showSection('productos')" id="nav-productos" class="sidebar-link active flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-box-open w-5"></i>
+                    <span class="font-medium">PRODUCTOS</span>
+                </a>
+
+                <a href="#" onclick="showSection('ventas')" id="nav-ventas" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-tag w-5"></i>
+                    <span class="font-medium">VENTAS</span>
+                </a>
+                <a href="#" onclick="showSection('compradores')" id="nav-compradores" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-users w-5"></i>
+                    <span class="font-medium">COMPRADORES</span>
+                </a>
+                <a href="#" onclick="showSection('analisis')" id="nav-analisis" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-chart-line w-5"></i>
+                    <span class="font-medium">ANÁLISIS</span>
+                </a>
+                <a href="#" onclick="showSection('notificaciones')" id="nav-notificaciones" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-regular fa-bell w-5"></i>
+                    <span class="font-medium">NOTIFICACIONES</span>
+                </a>
+                <a href="#" onclick="showSection('configuracion')" id="nav-configuracion" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
+                    <i class="fa-solid fa-gear w-5"></i>
+                    <span class="font-medium">CONFIGURACIÓN</span>
+                </a>
+            </nav>
         </div>
-    </section>
 
-    <section id="admin-view" class="view hidden">
-        <header class="admin-header">
-            <h1>Panel de Administración</h1>
-            <button id="admin-logout-btn">Cerrar Sesión</button>
-        </header>
+        <div class="p-4 border-t border-gray-100">
+            <button class="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors">
+                <i class="fa-solid fa-arrow-right-from-bracket w-5"></i>
+                Cerrar Sesión
+            </button>
+        </div>
+    </aside>
+
+    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
         
-        <div class="admin-container">
-            <section id="category-management-section">
-                <h2>Gestionar Categorías</h2>
-                <form id="category-form">
-                    <input type="hidden" id="category-edit-id">
-                    <div class="form-group category-form-inline">
-                        <input type="text" id="category-name-input" placeholder="Nombre de la categoría" required>
-                        <button type="submit" id="category-save-btn" class="primary-btn">Añadir</button>
-                    </div>
-                </form>
-                <div id="category-list"></div>
-            </section>
-            <hr class="section-divider">
-            <section id="product-management-section">
-                <h2 id="admin-form-title">Añadir Nuevo Producto</h2>
-                <form id="add-product-form">
-                    <input type="hidden" id="product-edit-id">
-                    <div class="form-group"><label>Título:</label><input type="text" id="product-title" required></div>
-                    <div class="form-group"><label>Descripción:</label><textarea id="product-desc" required></textarea></div>
-                    <div class="form-row">
-                        <div class="form-group half-width"><label>Precio (Bs.):</label><input type="number" id="product-price" step="0.01" min="0" required></div>
-                        <div class="form-group half-width"><label>Stock:</label><input type="number" id="product-stock" min="0" value="1" required></div>
-                    </div>
-                    <div class="form-group" style="background: #f9f9f9; padding: 15px; border-radius: 8px;">
-                        <label>Oferta (Opcional):</label>
-                        <div class="form-row">
-                            <div class="form-group half-width">
-                                <select id="discount-type">
-                                    <option value="">Sin Oferta</option>
-                                    <option value="percent">Porcentaje (%)</option>
-                                    <option value="fixed">Monto Fijo (Bs)</option>
-                                </select>
-                            </div>
-                            <div class="form-group half-width"><input type="number" id="discount-value" placeholder="Valor" min="0" step="0.01"></div>
+        <div id="agregar" class="section-content max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold text-gray-800">Agregar / Editar Producto</h2>
+            </div>
+
+            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Buscar producto para editar (Ingrese Código)</label>
+                <div class="flex gap-2">
+                    <input type="text" id="searchToEditCode" placeholder="Ej: PROD-001" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                    <button onclick="searchAndLoadProduct()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Buscar</button>
+                </div>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
+                <form id="productForm" onsubmit="saveProduct(event)">
+                    <input type="hidden" id="editIndex" value="-1"> <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
+                            <input type="text" id="prodName" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Código Único</label>
+                            <input type="text" id="prodCode" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
+                            <select id="prodCategory" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="Ropa Hombre">Ropa Hombre</option>
+                                <option value="Ropa Mujer">Ropa Mujer</option>
+                                <option value="Niños">Niños</option>
+                                <option value="Accesorios">Accesorios</option>
+                                <option value="Electrónica">Electrónica</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
+                            <input type="number" id="prodStock" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Precio Original ($)</label>
+                            <input type="number" step="0.01" id="prodPrice" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Descuento (%)</label>
+                            <select id="prodDiscount" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
+                                <option value="0">Sin descuento</option>
+                                <option value="3">3%</option>
+                                <option value="5">5%</option>
+                                <option value="10">10%</option>
+                                <option value="20">20%</option>
+                                <option value="50">50%</option>
+                                <option value="80">80%</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">URLs de Imágenes (Separadas por coma)</label>
+                            <textarea id="prodImages" rows="3" placeholder="http://imagen1.jpg, http://imagen2.jpg" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                            <p class="text-xs text-gray-500 mt-1">Estas URLs se guardan en BD pero no se exportan.</p>
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Imágenes (URLs):</label>
-                        <div id="url-inputs-container"></div>
-                        <button type="button" id="add-url-btn" class="secondary-btn small-btn">+ Agregar URL</button>
-                    </div>
-                    <div class="form-group"><label>Categoría:</label><select id="product-category" required></select></div>
-                    <div class="admin-form-actions">
-                        <button type="submit" id="save-product-btn" class="primary-btn">Guardar</button>
-                        <button type="button" id="cancel-edit-btn" class="secondary-btn hidden">Cancelar</button>
+
+                    <div class="mt-8 flex justify-end gap-3">
+                        <button type="button" onclick="resetForm()" class="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar / Limpiar</button>
+                        <button type="submit" class="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md">Guardar Producto</button>
                     </div>
                 </form>
-            </section>
-            <hr class="section-divider">
-            <section id="product-list-section">
-                <h2>Lista de Productos</h2>
-                <div id="admin-product-list"></div>
-            </section>
+            </div>
         </div>
-    </section>
 
-    <section id="store-view" class="view">
-        
-        <header class="store-header">
-            <h1 class="logo">SIRARI</h1>
-            
-            <div class="search-bar desktop-search">
-                <input type="text" id="search-input" placeholder="Buscar por nombre o código...">
-            </div>
-
-            <div class="header-icons">
-                <button id="about-us-btn" class="icon-btn desktop-only" title="Sobre Nosotros">
-                    <i class="fas fa-info-circle"></i>
-                </button>
-                <button id="admin-login-btn" class="icon-btn desktop-only" title="Admin Panel">
-                    <i class="fas fa-user-shield"></i>
-                </button>
+        <div id="productos" class="section-content active">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                <h2 class="text-2xl font-bold text-gray-800">Lista de Productos</h2>
                 
-                <button id="cart-btn" class="icon-btn">
-                    <i class="fas fa-shopping-cart"></i>
-                    <span id="cart-count">0</span>
-                </button>
-                <button id="mobile-menu-btn" class="icon-btn mobile-only">
-                    <i class="fas fa-bars"></i>
-                </button>
-            </div>
-        </header>
-
-        <div id="mobile-sidebar" class="mobile-sidebar">
-            <div class="sidebar-header">
-                <h2>Menú</h2>
-                <button id="close-sidebar-btn">&times;</button>
-            </div>
-            <div class="sidebar-content">
-                <div class="search-bar mobile-search-container">
-                    <input type="text" id="mobile-search-input" placeholder="Buscar y presionar Enter...">
-                </div>
-                
-                <a href="#footer-section" class="sidebar-link" id="mobile-about-link">Sobre Nosotros</a>
-                
-                <button id="mobile-admin-link" class="sidebar-link" style="text-align:left; cursor:pointer;">
-                    <i class="fas fa-user-shield" style="margin-right:8px;"></i> Acceso Admin
-                </button>
-
-                <div class="sidebar-accordion">
-                    <button id="mobile-cats-toggle" class="sidebar-link accordion-btn">
-                        Categorías <i class="fas fa-chevron-down"></i>
+                <div class="flex gap-2">
+                     <button onclick="editSelectedProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium shadow-sm">
+                        <i class="fa-solid fa-pen-to-square mr-2"></i> EDITAR SELECCIONADO
                     </button>
-                    <div id="mobile-cats-content" class="accordion-content">
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
+                <div class="flex flex-wrap gap-4 items-end justify-between">
+                    <div class="flex flex-wrap gap-3 flex-1">
+                        <div class="flex flex-col">
+                            <label class="text-xs text-gray-500 mb-1">Categoría</label>
+                            <select id="filterCategory" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todas</option>
+                                <option value="Ropa Hombre">Ropa Hombre</option>
+                                <option value="Ropa Mujer">Ropa Mujer</option>
+                                <option value="Niños">Niños</option>
+                                <option value="Accesorios">Accesorios</option>
+                            </select>
                         </div>
-                </div>
-            </div>
-        </div>
-        <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-        <nav id="category-filters"></nav>
-
-        <main>
-            <div id="product-grid" class="product-grid"></div>
-            <div id="pagination-controls" class="pagination-container"></div>
-        </main>
-
-        <footer id="footer-section">
-            <div class="footer-content">
-                <div class="footer-left">
-                    <h3>Sobre Nosotros</h3>
-                    <p>En SIRARI Tienda Online nos dedicamos a ofrecerte los mejores productos con la mejor calidad y precio del mercado. Nuestra misión es brindarte una experiencia de compra segura, rápida y confiable desde la comodidad de tu hogar.</p>
-                </div>
-                <div class="footer-right">
-                    <h4>Redes Sociales</h4>
-                    <div class="social-icons">
-                        <a href="https://facebook.com" target="_blank" class="social-link fb"><i class="fab fa-facebook-f"></i></a>
-                        <a href="https://instagram.com" target="_blank" class="social-link ig"><i class="fab fa-instagram"></i></a>
-                        <a href="https://tiktok.com" target="_blank" class="social-link tk"><i class="fab fa-tiktok"></i></a>
-                        <a href="https://twitter.com" target="_blank" class="social-link tw"><i class="fab fa-x-twitter"></i></a>
-                        <a href="https://wa.me/59173164833" target="_blank" class="social-link wa"><i class="fab fa-whatsapp"></i></a>
-                        <a href="mailto:info@sirari.com" class="social-link em"><i class="fas fa-envelope"></i></a>
-                    </div>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; 2024 SIRARI. Todos los derechos reservados.</p>
-            </div>
-        </footer>
-
-        <div id="product-detail-modal" class="modal hidden">
-            <div class="modal-content" id="product-detail-content"></div>
-        </div>
-        
-        <div id="cart-modal" class="modal hidden">
-            <div class="modal-content cart-modal-content">
-                <button class="close-modal" id="close-cart-modal">×</button>
-                <h2>Tu Carrito</h2>
-                <div id="cart-items"></div>
-                <hr>
-                <div class="cart-total"><strong>Total: Bs. <span id="cart-total">0.00</span></strong></div>
-                <button id="checkout-btn" class="primary-btn" disabled>Enviar Pedido</button>
-            </div>
-        </div>
-
-        <div id="checkout-modal" class="modal hidden">
-            <div class="modal-content">
-                <button class="close-modal" id="close-checkout-modal">×</button>
-                <h2>Datos de Envío</h2>
-                <form id="checkout-form">
-                    <div class="form-group"><label>Nombre Completo:</label><input type="text" id="customer-name" required></div>
-                    <div class="form-group"><label>Referencia de Dirección:</label><textarea id="customer-location" rows="2" required></textarea></div>
-                    <div id="location-question-step">
-                        <p style="text-align:center; margin-bottom:10px;">¿Estás en el lugar de entrega?</p>
-                        <div style="display:flex; gap:10px; justify-content:center;">
-                            <button type="button" id="btn-yes-location" class="secondary-btn">SÍ</button>
-                            <button type="button" id="btn-no-location" class="secondary-btn">NO</button>
+                         <div class="flex flex-col">
+                            <label class="text-xs text-gray-500 mb-1">Rango Stock</label>
+                            <select id="filterStock" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todos</option>
+                                <option value="1-10">1 - 10</option>
+                                <option value="10-50">10 - 50</option>
+                                <option value="100-500">100 - 500</option>
+                                <option value="500-1000">500 - 1000</option>
+                                <option value="1000-2000">1000 - 2000</option>
+                                <option value="2000-10000">2000 - 10000</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-xs text-gray-500 mb-1">Rango Precio</label>
+                            <select id="filterPrice" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todos</option>
+                                <option value="1-50">$1 - $50</option>
+                                <option value="51-100">$51 - $100</option>
+                                <option value="100-500">$100 - $500</option>
+                                <option value="500+">$500+</option>
+                            </select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-xs text-gray-500 mb-1">Descuentos</label>
+                            <select id="filterDiscount" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
+                                <option value="all">Todos</option>
+                                <option value="offer">En Oferta (Cualquiera)</option>
+                                <option value="3">3%</option>
+                                <option value="5">5%</option>
+                                <option value="10">10%</option>
+                                <option value="20">20%</option>
+                                <option value="50">50%</option>
+                                <option value="80">80%</option>
+                            </select>
                         </div>
                     </div>
-                    <div id="map-container-wrapper" class="hidden">
-                        <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación:</p>
-                        <div id="delivery-map"></div>
-                        <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="width:100%; margin-top:10px;">Confirmar ubicación</button>
+
+                    <div class="flex gap-2">
+                        <button onclick="exportData('xlsx')" class="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 text-sm">
+                            <i class="fa-solid fa-file-excel"></i> Excel
+                        </button>
+                        <button onclick="exportData('csv')" class="flex items-center gap-2 bg-yellow-600 text-white px-3 py-2 rounded-md hover:bg-yellow-700 text-sm">
+                            <i class="fa-solid fa-file-csv"></i> CSV
+                        </button>
+                        <button onclick="exportData('sql')" class="flex items-center gap-2 bg-gray-700 text-white px-3 py-2 rounded-md hover:bg-gray-800 text-sm">
+                            <i class="fa-solid fa-database"></i> SQL
+                        </button>
                     </div>
-                    <p id="location-status" class="location-status-msg"></p>
-                    <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
-                </form>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="p-4 w-10 text-center"><i class="fa-regular fa-check-square text-gray-400"></i></th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">#</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Producto</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Código</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Precio</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Desc %</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Precio Final</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Stock</th>
+                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Estado</th>
+                            </tr>
+                        </thead>
+                        <tbody id="productsTableBody" class="divide-y divide-gray-100">
+                            </tbody>
+                    </table>
+                </div>
+                <div class="p-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
+                    <span id="showingText">Mostrando 0 productos</span>
+                    <div class="flex gap-2">
+                        <button class="px-3 py-1 border rounded hover:bg-gray-50">Anterior</button>
+                        <button class="px-3 py-1 border rounded hover:bg-gray-50">Siguiente</button>
+                    </div>
+                </div>
             </div>
         </div>
-    </section>
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="app.js"></script>
+
+        <div id="ventas" class="section-content text-center py-20">
+            <h2 class="text-gray-400 text-2xl font-bold">Sección VENTAS deshabilitada</h2>
+        </div>
+        <div id="compradores" class="section-content text-center py-20">
+            <h2 class="text-gray-400 text-2xl font-bold">Sección COMPRADORES deshabilitada</h2>
+        </div>
+        <div id="analisis" class="section-content text-center py-20">
+            <h2 class="text-gray-400 text-2xl font-bold">Sección ANÁLISIS deshabilitada</h2>
+        </div>
+        <div id="notificaciones" class="section-content text-center py-20">
+            <h2 class="text-gray-400 text-2xl font-bold">Sección NOTIFICACIONES deshabilitada</h2>
+        </div>
+        <div id="configuracion" class="section-content text-center py-20">
+            <h2 class="text-gray-400 text-2xl font-bold">Sección CONFIGURACIÓN deshabilitada</h2>
+        </div>
+
+    </main>
+
+    <script>
+        // --- 1. DATOS INICIALES (Simulación de Base de Datos) ---
+        let products = [
+            { id: 1, name: "T-Shirt Clásica", code: "TS-001", category: "Ropa Hombre", price: 79.80, discount: 0, stock: 79, images: "url1.jpg" },
+            { id: 2, name: "Camisa Formal", code: "SH-002", category: "Ropa Hombre", price: 76.89, discount: 10, stock: 86, images: "url2.jpg" },
+            { id: 3, name: "Pantalón Niño", code: "PA-003", category: "Niños", price: 86.65, discount: 50, stock: 4, images: "url3.jpg" },
+            { id: 4, name: "Sweater Lana", code: "SW-004", category: "Ropa Hombre", price: 56.07, discount: 0, stock: 69, images: "url4.jpg" },
+            { id: 5, name: "Chaqueta Ligera", code: "JA-005", category: "Ropa Mujer", price: 36.00, discount: 5, stock: 65, images: "url5.jpg" }
+        ];
+
+        // --- 2. NAVEGACIÓN ---
+        function showSection(sectionId) {
+            // Ocultar todas las secciones
+            document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
+
+            // Mostrar la seleccionada
+            document.getElementById(sectionId).classList.add('active');
+            
+            // Activar link del sidebar
+            const navLink = document.getElementById('nav-' + sectionId);
+            if(navLink) navLink.classList.add('active');
+
+            if (sectionId === 'productos') {
+                applyFilters(); // Recargar tabla al entrar
+            }
+        }
+
+        // --- 3. LÓGICA TABLA Y FILTROS ---
+        function calculateFinalPrice(price, discount) {
+            if (!discount || discount == 0) return price;
+            return price - (price * (discount / 100));
+        }
+
+        function applyFilters() {
+            const cat = document.getElementById('filterCategory').value;
+            const stk = document.getElementById('filterStock').value;
+            const prc = document.getElementById('filterPrice').value;
+            const dsc = document.getElementById('filterDiscount').value;
+
+            let filtered = products.filter(p => {
+                // Filtro Categoría
+                if (cat !== 'all' && p.category !== cat) return false;
+
+                // Filtro Stock
+                if (stk !== 'all') {
+                    const [min, max] = stk.split('-').map(Number);
+                    if (stk === '500+') { if (p.stock < 500) return false; } // Ejemplo simple
+                    else if (p.stock < min || p.stock > max) return false;
+                }
+
+                // Filtro Precio
+                if (prc !== 'all') {
+                    if (prc === '500+') { if (p.price < 500) return false; }
+                    else {
+                        const [min, max] = prc.split('-').map(Number);
+                        if (p.price < min || p.price > max) return false;
+                    }
+                }
+
+                // Filtro Descuento
+                if (dsc !== 'all') {
+                    if (dsc === 'offer') { if (p.discount <= 0) return false; }
+                    else if (p.discount != dsc) return false;
+                }
+
+                return true;
+            });
+
+            renderTable(filtered);
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('productsTableBody');
+            tbody.innerHTML = '';
+            
+            data.forEach((p, index) => {
+                const finalPrice = calculateFinalPrice(p.price, p.discount);
+                const discountDisplay = p.discount > 0 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">-${p.discount}%</span>` : '';
+                const finalPriceDisplay = p.discount > 0 ? `$${finalPrice.toFixed(2)}` : '';
+                
+                // Lógica de estado (simulada por stock)
+                let statusBadge = '<span class="text-green-600 bg-green-100 px-2 py-1 rounded text-xs">Activo</span>';
+                if(p.stock < 10) statusBadge = '<span class="text-orange-600 bg-orange-100 px-2 py-1 rounded text-xs">Bajo Stock</span>';
+
+                const row = `
+                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50">
+                        <td class="p-4 text-center">
+                            <input type="checkbox" name="productSelect" value="${p.id}" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
+                        </td>
+                        <td class="p-4 text-sm text-gray-500">${index + 1}</td>
+                        <td class="p-4 text-sm font-medium text-gray-800 flex items-center gap-3">
+                            <div class="w-8 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0"></div> 
+                            ${p.name}
+                        </td>
+                        <td class="p-4 text-sm text-gray-500 font-mono">${p.code}</td>
+                        <td class="p-4 text-sm text-gray-500">${p.category}</td>
+                        <td class="p-4 text-sm text-gray-800 font-semibold">$${p.price.toFixed(2)}</td>
+                        <td class="p-4 text-sm">${discountDisplay}</td>
+                        <td class="p-4 text-sm text-indigo-600 font-bold">${finalPriceDisplay}</td>
+                        <td class="p-4 text-sm text-gray-600">${p.stock}</td>
+                        <td class="p-4">${statusBadge}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            
+            document.getElementById('showingText').innerText = `Mostrando ${data.length} productos`;
+        }
+
+        // --- 4. FUNCIONES DE AGREGAR / EDITAR ---
+        function resetForm() {
+            document.getElementById('productForm').reset();
+            document.getElementById('editIndex').value = "-1";
+            document.getElementById('searchToEditCode').value = "";
+        }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('editIndex').value;
+            
+            const newProduct = {
+                id: id == "-1" ? Date.now() : parseInt(id), // ID simple
+                name: document.getElementById('prodName').value,
+                code: document.getElementById('prodCode').value,
+                category: document.getElementById('prodCategory').value,
+                stock: parseInt(document.getElementById('prodStock').value),
+                price: parseFloat(document.getElementById('prodPrice').value),
+                discount: parseInt(document.getElementById('prodDiscount').value),
+                images: document.getElementById('prodImages').value
+            };
+
+            if (id == "-1") {
+                // Agregar nuevo
+                products.push(newProduct);
+                alert("Producto Agregado");
+            } else {
+                // Editar existente
+                const index = products.findIndex(p => p.id == id);
+                if(index !== -1) {
+                    products[index] = newProduct;
+                    alert("Producto Actualizado");
+                }
+            }
+            
+            resetForm();
+            showSection('productos'); // Volver a la lista
+        }
+
+        function loadProductToForm(product) {
+            document.getElementById('editIndex').value = product.id;
+            document.getElementById('prodName').value = product.name;
+            document.getElementById('prodCode').value = product.code;
+            document.getElementById('prodCategory').value = product.category;
+            document.getElementById('prodStock').value = product.stock;
+            document.getElementById('prodPrice').value = product.price;
+            document.getElementById('prodDiscount').value = product.discount;
+            document.getElementById('prodImages').value = product.images;
+            
+            showSection('agregar'); // Ir a la vista de agregar
+        }
+
+        function searchAndLoadProduct() {
+            const code = document.getElementById('searchToEditCode').value;
+            const product = products.find(p => p.code === code);
+            if(product) {
+                loadProductToForm(product);
+            } else {
+                alert("Producto con ese código no encontrado");
+            }
+        }
+
+        // --- 5. LÓGICA "EDITAR SELECCIONADO" ---
+        function editSelectedProduct() {
+            // Obtener checkbox marcado
+            const checkboxes = document.querySelectorAll('input[name="productSelect"]:checked');
+            
+            if (checkboxes.length === 0) {
+                alert("Por favor selecciona un producto de la lista primero.");
+                return;
+            }
+            if (checkboxes.length > 1) {
+                alert("Por favor selecciona solo un producto para editar.");
+                return;
+            }
+
+            const id = checkboxes[0].value;
+            const product = products.find(p => p.id == id);
+            if(product) loadProductToForm(product);
+        }
+
+        // --- 6. EXPORTAR (Excel, SQL, CSV) ---
+        function getExportData() {
+            // Retorna productos sin el campo imagenes (Req 3 final)
+            return products.map(({ images, ...rest }) => rest);
+        }
+
+        function exportData(type) {
+            const dataToExport = getExportData();
+
+            if (type === 'xlsx') {
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, "Productos");
+                XLSX.writeFile(wb, "Sirari_Productos.xlsx");
+            } 
+            else if (type === 'csv') {
+                const ws = XLSX.utils.json_to_sheet(dataToExport);
+                const csv = XLSX.utils.sheet_to_csv(ws);
+                downloadFile(csv, 'Sirari_Productos.csv', 'text/csv');
+            }
+            else if (type === 'sql') {
+                let sql = "INSERT INTO productos (id, name, code, category, price, discount, stock) VALUES \n";
+                const values = dataToExport.map(p => 
+                    `(${p.id}, '${p.name}', '${p.code}', '${p.category}', ${p.price}, ${p.discount}, ${p.stock})`
+                ).join(",\n");
+                sql += values + ";";
+                downloadFile(sql, 'Sirari_Productos.sql', 'text/plain');
+            }
+        }
+
+        function downloadFile(content, fileName, mimeType) {
+            const a = document.createElement('a');
+            const blob = new Blob([content], {type: mimeType});
+            a.href = URL.createObjectURL(blob);
+            a.download = fileName;
+            a.click();
+        }
+
+        // Inicializar
+        document.addEventListener('DOMContentLoaded', () => {
+            applyFilters();
+        });
+
+    </script>
 </body>
 </html>
