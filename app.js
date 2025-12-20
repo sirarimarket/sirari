@@ -13,42 +13,39 @@ let categories = [];
 let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
 let currentCategoryFilter = 'todos';
 let currentSearchTerm = '';
-let adminSelectedId = null; // Para el panel de admin
+let adminSelectedId = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     
-    // --- VISTAS ---
+    // VISTAS
     const views = {
         login: document.getElementById('login-view'),
         admin: document.getElementById('admin-view'),
         store: document.getElementById('store-view')
     };
 
-    // **IMPORTANTE**: Mostrar tienda al inicio
+    // MOSTRAR TIENDA AL INICIO
     views.store.classList.remove('hidden'); 
 
-    // CARGAR DATOS INICIALES
+    // CARGAR DATOS
     loadProducts();
     updateCartUI();
 
     // =============================================
-    //            LÓGICA TIENDA (CLIENTE)
+    //            LÓGICA TIENDA (ORIGINAL)
     // =============================================
 
     async function loadProducts() {
-        // Cargar Categorías
         let { data: catData } = await sb.from('categories').select('*');
         if (catData) {
             categories = catData;
             renderCategories();
         }
 
-        // Cargar Productos
         let { data: prodData } = await sb.from('products').select('*');
         if (prodData) {
             products = prodData;
             renderStore();
-            // Actualizar tabla admin si está visible
             if (!views.admin.classList.contains('hidden')) renderAdminTable();
         }
     }
@@ -69,7 +66,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         sidebarList.innerHTML = sidebarHtml;
 
-        // Eventos Header
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -78,7 +74,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 currentCategoryFilter = btn.dataset.cat;
                 currentSearchTerm = ''; 
                 document.getElementById('search-input').value = '';
-                
                 renderStore();
             });
         });
@@ -98,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const discount = p.discount_value || 0;
             const finalPrice = discount > 0 ? (p.price * (1 - discount/100)) : p.price;
             
-            // Manejo de imagen URL (texto)
+            // Procesar imagen (URL string o JSON string)
             let imgShow = 'https://via.placeholder.com/150';
             if(p.images) {
                  try {
@@ -127,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Buscadores
     document.getElementById('search-btn').onclick = () => {
         currentSearchTerm = document.getElementById('search-input').value;
         renderStore();
@@ -136,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if(e.key === 'Enter') { currentSearchTerm = e.target.value; renderStore(); }
     };
 
-    // Sidebar Menú
     document.getElementById('menu-toggle').onclick = () => {
         document.getElementById('sidebar').classList.add('show');
         document.getElementById('sidebar-overlay').classList.add('show');
@@ -165,7 +158,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeSidebar();
     };
 
-    // Carrito
     window.toggleCart = () => document.getElementById('cart-modal').classList.toggle('hidden');
     
     window.addToCart = (id) => {
@@ -218,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('cart-total-price').innerText = total.toFixed(2);
     }
 
-    // Checkout
     document.getElementById('checkout-btn').onclick = () => {
         if (cart.length === 0) return alert("Carrito vacío");
         document.getElementById('cart-modal').classList.add('hidden');
@@ -266,29 +257,22 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =============================================
-    //            LÓGICA ADMIN (NUEVA Y ADAPTADA)
+    //            LÓGICA ADMIN (NUEVA)
     // =============================================
     
     document.getElementById('go-to-admin').onclick = () => {
         views.store.classList.add('hidden');
         views.login.classList.remove('hidden');
-        closeSidebar(); // Cerrar menú hamburguesa si está abierto
+        closeSidebar();
     };
 
     document.getElementById('login-form').onsubmit = async (e) => {
         e.preventDefault();
         const email = document.getElementById('username').value;
         const password = document.getElementById('password').value;
-        
         const { data, error } = await sb.auth.signInWithPassword({ email, password });
-        
-        if (error) {
-            document.getElementById('login-error').innerText = 'Credenciales incorrectas';
-        } else {
-            views.login.classList.add('hidden');
-            views.admin.classList.remove('hidden');
-            renderAdminTable(); 
-        }
+        if (error) { document.getElementById('login-error').innerText = 'Credenciales incorrectas'; }
+        else { views.login.classList.add('hidden'); views.admin.classList.remove('hidden'); renderAdminTable(); }
     };
     document.getElementById('admin-logout-btn').onclick = async () => {
         await sb.auth.signOut();
@@ -296,13 +280,14 @@ document.addEventListener('DOMContentLoaded', () => {
         views.store.classList.remove('hidden');
     };
 
-    // -- NAVEGACIÓN DASHBOARD --
+    // TAB SWITCHING
     window.switchAdminTab = (tabId) => {
         document.querySelectorAll('.dash-tab').forEach(t => { t.classList.remove('active-tab'); t.classList.add('hidden-tab'); });
-        document.querySelectorAll('.dash-menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.dash-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.remove('hidden-tab');
         document.getElementById(tabId).classList.add('active-tab');
         
+        // Activar botón menú
         if(tabId === 'tab-agregar') document.querySelector("button[onclick=\"switchAdminTab('tab-agregar')\"]").classList.add('active');
         if(tabId === 'tab-productos') {
             document.querySelector("button[onclick=\"switchAdminTab('tab-productos')\"]").classList.add('active');
@@ -310,7 +295,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // -- BUSCAR POR CÓDIGO --
     window.searchForEdit = () => {
         const code = document.getElementById('admin-search-code').value.trim();
         const prod = products.find(p => p.code === code);
@@ -318,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { alert("Código no encontrado."); }
     };
 
-    // -- GUARDAR PRODUCTO (INSERT/UPDATE) --
+    // GUARDAR (TEXT URL)
     document.getElementById('product-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('edit-product-id').value;
@@ -330,10 +314,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const discountVal = parseInt(document.getElementById('p-discount').value) || 0;
         const code = document.getElementById('p-code').value || 'SIRARI-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
-        // URL de Imagen (Texto)
         const imageUrl = document.getElementById('p-image-url').value;
 
-        // Estructura según tus columnas CSV: "images"
         const productData = { 
             title, category, price, stock, description: desc, code, 
             discount_value: discountVal, 
@@ -348,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { alert('Guardado con éxito'); resetAdminForm(); loadProducts(); switchAdminTab('tab-productos'); }
     };
 
-    // -- RENDERIZAR TABLA CON FILTROS --
+    // FILTROS & TABLA
     window.applyAdminFilters = () => { renderAdminTable(); };
 
     window.renderAdminTable = () => {
@@ -370,14 +352,14 @@ document.addEventListener('DOMContentLoaded', () => {
             if (fStock !== 'all') {
                 const [min, max] = fStock.split('-').map(Number);
                 if (max && (s < min || s > max)) return false;
-                if (!max && s < min) return false; // caso 1000+
+                if (!max && s < min) return false;
             }
             
             const pr = p.price;
             if (fPrice !== 'all') {
                 const [min, max] = fPrice.split('-').map(Number);
                 if (max && (pr < min || pr > max)) return false;
-                if (!max && pr < min) return false; // caso 500+
+                if (!max && pr < min) return false;
             }
             
             const dVal = p.discount_value || 0;
@@ -406,7 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    // -- CHECKBOX Y EDICIÓN --
     window.handleCheck = (chk) => {
         document.querySelectorAll('.row-chk').forEach(c => { if(c!==chk) c.checked = false; });
         const btn = document.getElementById('btn-global-edit');
@@ -420,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('product-form').reset(); 
         document.getElementById('edit-product-id').value = ''; 
         adminSelectedId = null; 
-        document.getElementById('img-preview-container').style.display='none'; 
+        document.getElementById('img-preview-box').style.display='none'; 
     };
     
     function fillAdminForm(p) {
@@ -434,23 +415,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('p-description').value = p.description || '';
         
         let imgUrl = p.images;
-        try { 
-            const parsed = JSON.parse(p.images);
-            imgUrl = Array.isArray(parsed) ? parsed[0] : p.images;
-        } catch(e) {}
+        try { const parsed = JSON.parse(p.images); imgUrl = Array.isArray(parsed) ? parsed[0] : p.images; } catch(e) {}
         
         document.getElementById('p-image-url').value = imgUrl || '';
         if(imgUrl) {
             document.getElementById('admin-img-preview').src = imgUrl;
-            document.getElementById('img-preview-container').style.display = 'block';
+            document.getElementById('img-preview-box').style.display = 'block';
         }
     }
 
-    // -- EXPORTAR (Punto Final) --
     window.toggleExportMenu = () => document.getElementById('export-dropdown').classList.toggle('hidden');
     window.exportData = (type) => {
         const data = products.map(p => ({ ID: p.id, Producto: p.title, Codigo: p.code, Categoria: p.category, Precio: p.price, Stock: p.stock }));
-        if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inventario"); XLSX.writeFile(wb, "Sirari_Inventario.xlsx"); }
+        if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inv"); XLSX.writeFile(wb, "Sirari.xlsx"); }
         document.getElementById('export-dropdown').classList.add('hidden');
     };
 });
