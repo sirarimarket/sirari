@@ -24,6 +24,9 @@ document.addEventListener('DOMContentLoaded', () => {
         store: document.getElementById('store-view')
     };
 
+    // --- ¡CORRECCIÓN AQUÍ! MOSTRAR TIENDA AL INICIAR ---
+    views.store.classList.remove('hidden'); 
+
     // --- CARGAR DATOS INICIALES ---
     loadProducts();
     updateCartUI();
@@ -217,7 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span class="cart-qty-value">${c.quantity}</span>
                         <button class="cart-qty-btn" onclick="updateCartItem(${c.id}, 1)">+</button>
                     </div>
-                    <button class="cart-remove-btn" onclick="removeFromCart(${c.id})">&times;</button>
+                    <button class="cart-remove-btn" onclick="removeFromCart(${c.id})">×</button>
                 </div>
             `;
         });
