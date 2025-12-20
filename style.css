@@ -1,5 +1,5 @@
 /* ============================================= */
-/* VARIABLES Y GLOBALES ORIGINALES               */
+/* VARIABLES Y ESTILOS ORIGINALES (TIENDA)     */
 /* ============================================= */
 :root {
     --color-principal: #D32F2F;
@@ -18,7 +18,7 @@ body { background-color: var(--color-gris-claro); color: var(--color-negro); }
 .hidden { display: none !important; }
 .view { width: 100%; min-height: 100vh; display: flex; flex-direction: column; } 
 
-/* BOTONES */
+/* BOTONES TIENDA */
 button { cursor: pointer; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; font-size: 1rem; transition: 0.2s; }
 .primary-btn { background-color: var(--color-principal); color: var(--color-blanco); width: 100%; margin-top: 10px; }
 .primary-btn:hover { background-color: var(--color-principal-dark); }
@@ -31,7 +31,7 @@ button { cursor: pointer; border: none; padding: 12px 20px; border-radius: 6px; 
 .login-container input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; }
 .error-msg { color: red; font-size: 0.9rem; margin: 10px 0; min-height: 20px; }
 
-/* HEADER Y TIENDA */
+/* HEADER TIENDA */
 header { background-color: var(--color-blanco); padding: 15px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
 .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
 .logo { font-size: 1.5rem; font-weight: 900; color: var(--color-principal); letter-spacing: 1px; }
@@ -46,7 +46,7 @@ header { background-color: var(--color-blanco); padding: 15px; position: sticky;
 .cat-btn { white-space: nowrap; padding: 6px 16px; border-radius: 20px; background: #eee; color: #555; font-size: 0.9rem; border: 1px solid transparent; }
 .cat-btn.active { background: var(--color-principal); color: white; }
 
-/* GRID PRODUCTOS (ESTILO ORIGINAL) */
+/* GRID PRODUCTOS */
 .products-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 15px; padding: 15px; max-width: 1200px; margin: 0 auto; }
 .product-card { background: var(--color-blanco); border-radius: 10px; overflow: hidden; box-shadow: 0 2px 5px rgba(0,0,0,0.05); transition: transform 0.2s; position: relative; }
 .product-card:hover { transform: translateY(-3px); }
@@ -59,7 +59,7 @@ header { background-color: var(--color-blanco); padding: 15px; position: sticky;
 .new-price { color: var(--color-principal); font-weight: bold; font-size: 1.1rem; }
 .add-btn { width: 100%; padding: 8px; background: var(--color-negro); color: white; border-radius: 6px; font-size: 0.9rem; }
 
-/* SIDEBAR Y MODALES */
+/* SIDEBAR Y MODALES (TIENDA) */
 .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 200; display: none; }
 .sidebar-overlay.show { display: block; }
 .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: white; z-index: 201; transition: left 0.3s; padding: 20px; display: flex; flex-direction: column; }
