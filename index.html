@@ -25,45 +25,40 @@
     </section>
 
     <section id="admin-view" class="view hidden">
-        <div class="dash-layout">
+        <div class="panel-layout">
             
-            <aside class="dash-sidebar">
-                <div class="dash-brand">
-                    <h2>SIRARI Admin</h2>
+            <aside class="panel-lateral-admin">
+                <div class="panel-logo">
+                    <h2>SIRARI <small>Admin</small></h2>
                 </div>
 
-                <div class="dash-menu">
-                    <div class="dash-category">USUARIO</div>
-                    <div class="dash-item-user">
-                        <i class="fa-solid fa-user-shield"></i> <span>Admin</span>
+                <div class="panel-menu">
+                    <div class="panel-label">PRINCIPAL</div>
+                    <div class="panel-btn active" onclick="switchPanelTab('tab-agregar')">
+                        <i class="fa-solid fa-circle-plus"></i> Agregar / Editar
+                    </div>
+                    <div class="panel-btn" onclick="switchPanelTab('tab-lista')">
+                        <i class="fa-solid fa-boxes-stacked"></i> Inventario
                     </div>
 
-                    <div class="dash-category">GESTIÓN</div>
-                    <button class="dash-btn active" onclick="switchAdminTab('tab-agregar')">
-                        <i class="fa-solid fa-circle-plus"></i> AGREGAR / EDITAR
-                    </button>
-                    <button class="dash-btn" onclick="switchAdminTab('tab-productos')">
-                        <i class="fa-solid fa-boxes-stacked"></i> PRODUCTOS
-                    </button>
-
-                    <div class="dash-category">HERRAMIENTAS</div>
-                    <button class="dash-btn disabled"><i class="fa-solid fa-chart-line"></i> VENTAS</button>
-                    <button class="dash-btn disabled"><i class="fa-solid fa-gear"></i> CONFIG</button>
+                    <div class="panel-label">HERRAMIENTAS</div>
+                    <div class="panel-btn disabled"><i class="fa-solid fa-chart-line"></i> Ventas</div>
+                    <div class="panel-btn disabled"><i class="fa-solid fa-users"></i> Clientes</div>
                 </div>
 
-                <div class="dash-footer">
-                    <button id="admin-logout-btn" class="dash-logout-btn">
+                <div class="panel-footer">
+                    <button id="admin-logout-btn" class="panel-logout-btn">
                         <i class="fa-solid fa-right-from-bracket"></i> Salir
                     </button>
                 </div>
             </aside>
 
-            <main class="dash-content">
+            <main class="panel-content">
                 
-                <div id="tab-agregar" class="dash-tab active-tab">
-                    <div class="dash-header">
+                <div id="tab-agregar" class="panel-tab active-tab">
+                    <div class="panel-header">
                         <h2>Gestión de Producto</h2>
-                        <div class="dash-search-edit">
+                        <div class="panel-search-edit">
                             <input type="text" id="admin-search-code" placeholder="Código (ej: SIRARI-123)">
                             <button class="primary-btn small-btn" onclick="searchForEdit()">
                                 <i class="fa-solid fa-magnifying-glass"></i> Buscar
@@ -71,90 +66,88 @@
                         </div>
                     </div>
 
-                    <div class="dash-card">
+                    <div class="panel-card">
                         <form id="product-form">
                             <input type="hidden" id="edit-product-id">
                             
-                            <div class="dash-grid">
-                                <div class="form-group">
-                                    <label>Nombre</label>
+                            <div class="panel-grid">
+                                <div class="p-group">
+                                    <label>Nombre del Producto</label>
                                     <input type="text" id="p-title" required>
                                 </div>
-                                <div class="form-group">
+                                <div class="p-group">
                                     <label>Código (Automático si vacío)</label>
                                     <input type="text" id="p-code" placeholder="Ej: SIRARI-X1Y2">
                                 </div>
-                                <div class="form-group">
+                                <div class="p-group">
                                     <label>Categoría</label>
                                     <input type="text" id="p-category" list="category-list" required>
                                     <datalist id="category-list"></datalist>
                                 </div>
-                                <div class="form-group">
+                                <div class="p-group">
                                     <label>Precio (Bs)</label>
                                     <input type="number" id="p-price" step="0.01" required>
                                 </div>
-                                <div class="form-group">
+                                <div class="p-group">
                                     <label>Descuento (%)</label>
                                     <input type="number" id="p-discount" placeholder="0" min="0" max="100">
                                 </div>
-                                <div class="form-group">
+                                <div class="p-group">
                                     <label>Stock</label>
                                     <input type="number" id="p-stock" required min="0">
                                 </div>
-                                <div class="form-group full-width">
+                                <div class="p-group full">
                                     <label>Descripción</label>
                                     <textarea id="p-description" rows="2"></textarea>
                                 </div>
-                                <div class="form-group full-width">
-                                    <label>URL de Imagen</label>
-                                    <input type="text" id="p-image-url" placeholder="https://ejemplo.com/foto.jpg">
+                                <div class="p-group full">
+                                    <label>URL de Imagen (Link)</label>
+                                    <input type="text" id="p-image-url" placeholder="Ej: https://i.imgur.com/foto.jpg">
                                     <div id="img-preview-box" style="display:none; margin-top:10px;">
-                                        <img id="admin-img-preview" src="" style="height:80px; border-radius:4px; border:1px solid #ccc;">
+                                        <p style="font-size:0.8rem; color:#666;">Vista previa:</p>
+                                        <img id="admin-img-preview" src="" style="height:80px; border-radius:4px; border:1px solid #ddd;">
                                     </div>
                                 </div>
                             </div>
                             
-                            <div class="dash-actions">
+                            <div class="panel-actions">
                                 <button type="button" class="secondary-btn" onclick="resetAdminForm()">Limpiar</button>
-                                <button type="submit" class="primary-btn" style="width: auto;">Guardar</button>
+                                <button type="submit" class="primary-btn" style="width:auto;">Guardar Producto</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <div id="tab-productos" class="dash-tab hidden-tab">
-                    <div class="dash-header">
-                        <h2>Inventario</h2>
-                        <button id="btn-global-edit" class="dash-edit-btn hidden" onclick="editSelectedRow()">
+                <div id="tab-lista" class="panel-tab hidden-tab">
+                    <div class="panel-header">
+                        <h2>Lista de Inventario</h2>
+                        <button id="btn-global-edit" class="panel-edit-btn hidden" onclick="editSelectedRow()">
                             <i class="fa-solid fa-pen"></i> EDITAR SELECCIONADO
                         </button>
                     </div>
 
-                    <div class="dash-filters">
-                        <select id="f-cat" onchange="applyAdminFilters()"><option value="all">Categorías</option></select>
-                        <select id="f-stock" onchange="applyAdminFilters()">
-                            <option value="all">Stock</option>
-                            <option value="1-10">1 - 10</option>
-                            <option value="10-50">10 - 50</option>
-                            <option value="100-500">100 - 500</option>
-                            <option value="500+">+500</option>
+                    <div class="panel-filters">
+                        <select id="f-cat" onchange="renderAdminTable()"><option value="all">Todas las Categorías</option></select>
+                        <select id="f-stock" onchange="renderAdminTable()">
+                            <option value="all">Todo Stock</option>
+                            <option value="1-10">Bajo (1-10)</option>
+                            <option value="10-50">Medio (10-50)</option>
+                            <option value="500+">Alto (+500)</option>
                         </select>
-                        <select id="f-price" onchange="applyAdminFilters()">
-                            <option value="all">Precio</option>
-                            <option value="1-10">1 - 10 Bs</option>
-                            <option value="10-50">10 - 50 Bs</option>
+                        <select id="f-price" onchange="renderAdminTable()">
+                            <option value="all">Todo Precio</option>
+                            <option value="1-100">0 - 100 Bs</option>
                             <option value="100-500">100 - 500 Bs</option>
                             <option value="500+">+500 Bs</option>
                         </select>
-                        <select id="f-offer" onchange="applyAdminFilters()">
+                        <select id="f-offer" onchange="renderAdminTable()">
                             <option value="all">Ofertas</option>
-                            <option value="yes">Con Oferta</option>
-                            <option value="no">Sin Oferta</option>
+                            <option value="yes">Con Descuento</option>
                         </select>
-                        
+
                         <div style="margin-left:auto; position:relative;">
                             <button class="secondary-btn small-btn" onclick="toggleExportMenu()">Exportar <i class="fa-solid fa-chevron-down"></i></button>
-                            <div id="export-dropdown" class="dash-export-menu hidden">
+                            <div id="export-dropdown" class="panel-export-menu hidden">
                                 <div onclick="exportData('xlsx')">Excel</div>
                                 <div onclick="exportData('csv')">CSV</div>
                                 <div onclick="exportData('sql')">SQL</div>
@@ -162,8 +155,8 @@
                         </div>
                     </div>
 
-                    <div class="dash-table-wrapper">
-                        <table class="dash-table">
+                    <div class="panel-table-wrap">
+                        <table class="panel-table">
                             <thead>
                                 <tr>
                                     <th width="30"></th>
@@ -177,7 +170,8 @@
                                     <th>Stock</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-table-body"></tbody>
+                            <tbody id="admin-table-body">
+                                </tbody>
                         </table>
                     </div>
                 </div>
