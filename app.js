@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
         store: document.getElementById('store-view')
     };
 
-    // MOSTRAR TIENDA POR DEFECTO
+    // MOSTRAR TIENDA AL INICIAR
     views.store.classList.remove('hidden'); 
 
     // CARGAR DATOS
@@ -36,16 +36,19 @@ document.addEventListener('DOMContentLoaded', () => {
     // =============================================
 
     async function loadProducts() {
+        // Cargar Categorías
         let { data: catData } = await sb.from('categories').select('*');
         if (catData) {
             categories = catData;
             renderCategories();
         }
 
+        // Cargar Productos
         let { data: prodData } = await sb.from('products').select('*');
         if (prodData) {
             products = prodData;
             renderStore();
+            // Si estamos en admin, actualizar tabla
             if (!views.admin.classList.contains('hidden')) renderAdminTable();
         }
     }
@@ -66,14 +69,14 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         sidebarList.innerHTML = sidebarHtml;
 
-        // EVENTO: Reseteo de búsqueda al cambiar categoría (Tu petición)
+        // EVENTO: Reseteo de búsqueda al cambiar categoría
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 
                 currentCategoryFilter = btn.dataset.cat;
-                currentSearchTerm = ''; // Reseteo
+                currentSearchTerm = ''; 
                 document.getElementById('search-input').value = '';
                 
                 renderStore();
@@ -95,11 +98,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const discount = p.discount_value || 0;
             const finalPrice = discount > 0 ? (p.price * (1 - discount/100)) : p.price;
             
+            // Lógica simple para imagen (usa la primera si es array, o el string directo)
+            let imgShow = 'https://via.placeholder.com/150';
+            if(p.images) {
+                 // Si es JSON string tipo ["url"] o solo url
+                 try {
+                     const parsed = JSON.parse(p.images);
+                     imgShow = Array.isArray(parsed) ? parsed[0] : p.images;
+                 } catch(e) {
+                     imgShow = p.images; // Es un texto plano
+                 }
+            }
+
             const div = document.createElement('div');
             div.className = 'product-card';
             div.innerHTML = `
                 ${discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : ''}
-                <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-img" alt="${p.title}">
+                <img src="${imgShow}" class="product-img" alt="${p.title}">
                 <div class="product-info">
                     <h3 class="product-title">${p.title}</h3>
                     <div class="product-price-row">
@@ -252,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =============================================
-    //            LÓGICA ADMIN (LOGIN REAL)
+    //            LÓGICA ADMIN
     // =============================================
     
     document.getElementById('go-to-admin').onclick = () => {
@@ -261,7 +276,6 @@ document.addEventListener('DOMContentLoaded', () => {
         closeSidebar();
     };
 
-    // LOGIN CON SUPABASE (Restaurado)
     document.getElementById('login-form').onsubmit = async (e) => {
         e.preventDefault();
         const email = document.getElementById('username').value;
@@ -283,10 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
         views.store.classList.remove('hidden');
     };
 
-    // =============================================
-    //            NUEVO PANEL ADMIN
-    // =============================================
-
+    // TABS
     window.switchAdminTab = (tabId) => {
         document.querySelectorAll('.admin-tab').forEach(t => { t.classList.remove('active-tab'); t.classList.add('hidden-tab'); });
         document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
@@ -306,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { alert("Código no encontrado."); }
     };
 
+    // GUARDAR PRODUCTO (AHORA CON URL STRING)
     document.getElementById('product-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('edit-product-id').value;
@@ -316,19 +328,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const desc = document.getElementById('p-description').value;
         const discountVal = parseInt(document.getElementById('p-discount').value) || 0;
         const code = document.getElementById('p-code').value || 'SIRARI-' + Math.random().toString(36).substr(2, 5).toUpperCase();
-        const file = document.getElementById('p-image-file').files[0];
-        let imageUrl = document.getElementById('current-image-url').value;
+        
+        // Capturar URL de texto
+        const imageUrl = document.getElementById('p-image-url').value;
 
-        if (file) {
-            const fileName = `prod_${Date.now()}_${file.name}`;
-            const { error } = await sb.storage.from('products').upload(fileName, file);
-            if (!error) {
-                const { data } = sb.storage.from('products').getPublicUrl(fileName);
-                imageUrl = data.publicUrl;
-            }
-        }
-
-        const productData = { title, category, price, stock, description: desc, code, discount_value: discountVal, image_url: imageUrl };
+        // Nota: Guardamos en 'images' porque así está en tu CSV.
+        const productData = { 
+            title, 
+            category, 
+            price, 
+            stock, 
+            description: desc, 
+            code, 
+            discount_value: discountVal, 
+            images: imageUrl // Guardamos el link directo
+        };
         
         let error;
         if (id) { const res = await sb.from('products').update(productData).eq('id', id); error = res.error; } 
@@ -388,7 +402,8 @@ document.addEventListener('DOMContentLoaded', () => {
         else { adminSelectedId = null; btn.classList.add('hidden'); }
     };
     window.editSelectedRow = () => { if(adminSelectedId) { fillAdminForm(products.find(p => p.id == adminSelectedId)); switchAdminTab('tab-agregar'); } };
-    window.resetAdminForm = () => { document.getElementById('product-form').reset(); document.getElementById('edit-product-id').value = ''; adminSelectedId = null; };
+    window.resetAdminForm = () => { document.getElementById('product-form').reset(); document.getElementById('edit-product-id').value = ''; adminSelectedId = null; document.getElementById('admin-img-preview').style.display='none'; };
+    
     function fillAdminForm(p) {
         document.getElementById('edit-product-id').value = p.id;
         document.getElementById('p-title').value = p.title;
@@ -398,15 +413,27 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('p-stock').value = p.stock;
         document.getElementById('p-discount').value = p.discount_value || 0;
         document.getElementById('p-description').value = p.description || '';
-        document.getElementById('current-image-url').value = p.image_url;
-        document.getElementById('img-status-msg').style.display = 'block';
+        
+        // Cargar URL imagen
+        let imgUrl = p.images;
+        // Si viene como array JSON string
+        try { 
+            const parsed = JSON.parse(p.images);
+            imgUrl = Array.isArray(parsed) ? parsed[0] : p.images;
+        } catch(e) {}
+        
+        document.getElementById('p-image-url').value = imgUrl || '';
+        if(imgUrl) {
+            const preview = document.getElementById('admin-img-preview');
+            preview.src = imgUrl;
+            preview.style.display = 'block';
+        }
     }
 
     window.toggleExportMenu = () => document.getElementById('export-dropdown').classList.toggle('hidden');
     window.exportData = (type) => {
         const data = products.map(p => ({ ID: p.id, Producto: p.title, Codigo: p.code, Categoria: p.category, Precio: p.price, Stock: p.stock }));
         if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inv"); XLSX.writeFile(wb, "Sirari.xlsx"); }
-        // ... (otros exports simples omitidos por brevedad, funcionan igual)
         document.getElementById('export-dropdown').classList.add('hidden');
     };
 });
