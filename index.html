@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sirari</title>
+    <link rel="icon" href="TU_URL_DEL_FAVICON.png" type="image/png">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -17,7 +18,7 @@
             <form id="login-form">
                 <input type="text" id="username" placeholder="Email (admin@sirari.com)" required>
                 <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="submit" class="primary-btn">Ingresar</button>
+                <button type="submit">Ingresar</button>
             </form>
             <p id="login-error" class="error-msg"></p>
             <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
@@ -25,125 +26,123 @@
     </section>
 
     <section id="admin-view" class="view hidden">
-        <div class="admin-layout">
+        <header>
+            <div class="header-top">
+                <div class="logo">SIRARI <span style="font-size:0.8rem; font-weight:normal;">ADMIN</span></div>
+                <button id="admin-logout-btn" class="secondary-btn small-btn">Salir</button>
+            </div>
+        </header>
+        <div style="padding: 20px; max-width: 1200px; margin: 0 auto;">
             
-            <aside class="admin-sidebar">
-                <h2 style="color: var(--color-principal); text-align: center; margin-bottom: 20px;">PANEL</h2>
-                
-                <nav class="admin-nav">
-                    <button class="secondary-btn active-nav" onclick="switchAdminTab('tab-agregar')">
-                        <i class="fa-solid fa-plus"></i> Agregar Producto
-                    </button>
-                    <button class="secondary-btn" onclick="switchAdminTab('tab-lista')">
-                        <i class="fa-solid fa-list"></i> Ver Inventario
-                    </button>
-                    <button class="secondary-btn" style="opacity:0.5; cursor:not-allowed;">Ventas</button>
-                    <button class="secondary-btn" style="opacity:0.5; cursor:not-allowed;">Configuración</button>
-                </nav>
+            <div class="admin-tabs">
+                <button class="tab-btn active" onclick="switchTab('products-tab')">Productos</button>
+                <button class="tab-btn" onclick="switchTab('add-product-tab')">Agregar Producto</button>
+            </div>
 
-                <div style="margin-top: auto;">
-                    <button id="admin-logout-btn" class="secondary-btn" style="background:#333; color:white;">
-                        <i class="fa-solid fa-sign-out-alt"></i> Salir
-                    </button>
+            <div id="products-tab" class="tab-content active">
+                <div class="search-bar">
+                    <input type="text" id="admin-search" placeholder="Buscar producto por nombre o código...">
                 </div>
-            </aside>
+                <div style="overflow-x:auto;">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Imagen</th>
+                                <th>Producto</th>
+                                <th>Código</th>
+                                <th>Categoría</th>
+                                <th>Precio</th>
+                                <th>Stock</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-products-list">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
 
-            <main class="admin-content">
-                
-                <div id="tab-agregar" class="admin-tab">
-                    <div class="admin-header-box">
-                        <h2>Gestionar Producto</h2>
-                        <div style="display:flex; gap:10px;">
-                            <input type="text" id="admin-search-code" placeholder="Buscar por código..." style="padding:8px;">
-                            <button class="primary-btn small-btn" onclick="searchForEdit()" style="margin:0;">Buscar</button>
+            <div id="add-product-tab" class="tab-content">
+                <div class="form-card">
+                    <h2 id="form-title">Nuevo Producto</h2>
+                    <form id="product-form">
+                        <input type="hidden" id="edit-product-id">
+                        
+                        <div class="form-group">
+                            <label>Nombre del Producto</label>
+                            <input type="text" id="product-title" required>
                         </div>
-                    </div>
 
-                    <div class="form-container">
-                        <form id="product-form">
-                            <input type="hidden" id="edit-product-id">
+                        <div class="form-group">
+                            <label>Código (Opcional)</label>
+                            <input type="text" id="product-code" placeholder="Ej: AUD-001">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Categoría</label>
+                            <select id="product-category" required>
+                                </select>
+                            <input type="text" id="new-category-input" placeholder="Nueva categoría..." style="display:none; margin-top:5px;">
+                            <button type="button" id="toggle-new-cat-btn" class="secondary-btn small-btn" style="margin-top:5px;">+ Crear Categoría</button>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Precio (Bs)</label>
+                                <input type="number" id="product-price" step="0.01" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Stock</label>
+                                <input type="number" id="product-stock" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Descripción</label>
+                            <textarea id="product-description" rows="3"></textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label>Imagen del Producto</label>
                             
-                            <div class="admin-grid">
-                                <div>
-                                    <label>Nombre</label>
-                                    <input type="text" id="p-title" required>
-                                </div>
-                                <div>
-                                    <label>Código</label>
-                                    <input type="text" id="p-code" placeholder="Automático si vacío">
-                                </div>
-                                <div>
-                                    <label>Categoría</label>
-                                    <input type="text" id="p-category" list="category-list" required>
-                                    <datalist id="category-list"></datalist>
-                                </div>
-                                <div>
-                                    <label>Precio (Bs)</label>
-                                    <input type="number" id="p-price" step="0.01" required>
-                                </div>
-                                <div>
-                                    <label>Descuento (%)</label>
-                                    <input type="number" id="p-discount" placeholder="0">
-                                </div>
-                                <div>
-                                    <label>Stock</label>
-                                    <input type="number" id="p-stock" required>
-                                </div>
-                                <div style="grid-column: span 2;">
-                                    <label>Descripción</label>
-                                    <textarea id="p-description" rows="2"></textarea>
-                                </div>
-                                <div style="grid-column: span 2;">
-                                    <label>URL Imagen</label>
-                                    <input type="text" id="p-image-url" placeholder="https://...">
-                                    <img id="admin-img-preview" src="" style="height:50px; display:none; margin-top:5px;">
-                                </div>
+                            <div class="image-upload-option">
+                                <input type="radio" name="img-option" id="opt-file" value="file" checked onchange="toggleImageInput()">
+                                <label for="opt-file">Subir Archivo</label>
+                                
+                                <input type="radio" name="img-option" id="opt-url" value="url" onchange="toggleImageInput()">
+                                <label for="opt-url">Usar URL</label>
                             </div>
 
-                            <div class="admin-actions">
-                                <button type="button" class="secondary-btn" onclick="resetAdminForm()">Limpiar</button>
-                                <button type="submit" class="primary-btn">Guardar</button>
+                            <div id="input-file-container">
+                                <input type="file" id="product-image-file" accept="image/*">
                             </div>
-                        </form>
-                    </div>
+                            <div id="input-url-container" class="hidden">
+                                <input type="url" id="product-image-url" placeholder="https://ejemplo.com/imagen.jpg">
+                            </div>
+                            
+                            <img id="image-preview" src="" class="hidden" style="max-width: 100px; margin-top: 10px; border-radius: 5px; border: 1px solid #ddd;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>¿Tiene Descuento?</label>
+                            <select id="discount-type" onchange="toggleDiscountInput()">
+                                <option value="">No</option>
+                                <option value="percentage">Sí, Porcentaje (%)</option>
+                            </select>
+                        </div>
+                        <div class="form-group hidden" id="discount-value-container">
+                            <label>Valor del Descuento</label>
+                            <input type="number" id="discount-value" placeholder="Ej: 10">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="button" class="secondary-btn" onclick="resetForm()">Cancelar</button>
+                            <button type="submit" class="primary-btn">Guardar Producto</button>
+                        </div>
+                    </form>
                 </div>
+            </div>
 
-                <div id="tab-lista" class="admin-tab hidden">
-                    <div class="admin-header-box">
-                        <h2>Inventario</h2>
-                        <button id="btn-global-edit" class="primary-btn small-btn hidden" onclick="editSelectedRow()" style="margin:0; background: var(--color-verde);">
-                            Editar Seleccionado
-                        </button>
-                    </div>
-
-                    <div class="admin-filters">
-                        <select id="f-cat" onchange="renderAdminTable()"><option value="all">Categorías</option></select>
-                        <select id="f-stock" onchange="renderAdminTable()">
-                            <option value="all">Stock</option>
-                            <option value="low">Bajo (<10)</option>
-                            <option value="high">Alto (>100)</option>
-                        </select>
-                        <button class="secondary-btn small-btn" onclick="exportData('xlsx')" style="width:auto; margin:0;">Exportar Excel</button>
-                    </div>
-
-                    <div style="overflow-x:auto; background:white; padding:10px; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                        <table class="admin-table">
-                            <thead>
-                                <tr>
-                                    <th>Sel</th>
-                                    <th>Producto</th>
-                                    <th>Código</th>
-                                    <th>Precio</th>
-                                    <th>Stock</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-table-body">
-                                </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            </main>
         </div>
     </section>
 
@@ -164,69 +163,78 @@
             </div>
 
             <div class="categories-scroll" id="categories-container">
-                <button class="cat-btn active" data-cat="todos">Todos</button>
-            </div>
+                </div>
         </header>
 
-        <div class="products-grid" id="products-container"></div>
+        <div class="products-grid" id="products-container">
+            </div>
 
         <div class="sidebar-overlay" id="sidebar-overlay"></div>
         <div class="sidebar" id="sidebar">
             <button id="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
             <h3>Menú</h3>
+            
             <div class="sidebar-search">
                 <input type="text" id="sidebar-search-input" placeholder="Buscar...">
             </div>
-            <ul id="sidebar-categories"></ul>
+
+            <ul id="sidebar-categories">
+                </ul>
+
             <div class="admin-link">
                 <a href="#" id="go-to-admin">Admin Panel</a>
             </div>
         </div>
-    </section>
 
-    <div id="cart-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Tu Carrito</h2>
-                <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="cart-items"></div>
-            <div class="cart-total"><h3>Total: Bs. <span id="cart-total-price">0.00</span></h3></div>
-            <button id="checkout-btn" class="primary-btn">Realizar Pedido</button>
-        </div>
-    </div>
-
-    <div id="checkout-modal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Datos de Envío</h2>
-                <button onclick="closeCheckout()"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="checkout-form">
-                <input type="text" id="customer-name" placeholder="Nombre completo" required>
-                <div class="location-group">
-                    <textarea id="customer-location" placeholder="Referencia de ubicación" rows="2" required></textarea>
+        <div id="cart-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Tu Carrito</h2>
+                    <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
                 </div>
-                <div id="location-question-step">
-                    <p style="text-align:center; margin-bottom:10px;">¿Estás en el lugar de entrega?</p>
-                    <div style="display:flex; gap:10px; justify-content:center;">
-                        <button type="button" id="btn-yes-location" class="secondary-btn">SÍ</button>
-                        <button type="button" id="btn-no-location" class="secondary-btn">NO</button>
+                <div id="cart-items">
                     </div>
+                <div class="cart-total">
+                    <h3>Total: Bs. <span id="cart-total-price">0.00</span></h3>
                 </div>
-                <div id="map-container-wrapper" class="hidden">
-                    <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación:</p>
-                    <div id="delivery-map"></div>
-                    <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="width:100%; margin-top:10px;">Confirmar ubicación</button>
-                </div>
-                <p id="location-status" class="location-status-msg"></p>
-                <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
-            </form>
+                <button id="checkout-btn" class="primary-btn">Realizar Pedido</button>
+            </div>
         </div>
-    </div>
 
-    <div id="toast" class="toast-notification">Producto agregado</div>
+        <div id="checkout-modal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Datos de Envío</h2>
+                    <button onclick="closeCheckout()"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <form id="checkout-form">
+                    <input type="text" id="customer-name" placeholder="Nombre completo" required>
+                    <div class="location-group">
+                        <textarea id="customer-location" placeholder="Referencia de ubicación" rows="2" required></textarea>
+                    </div>
+                    
+                    <div id="location-question-step">
+                        <p style="text-align:center; margin-bottom:10px;">¿Estás en el lugar de entrega?</p>
+                        <div style="display:flex; gap:10px; justify-content:center;">
+                            <button type="button" id="btn-yes-location" class="secondary-btn">SÍ</button>
+                            <button type="button" id="btn-no-location" class="secondary-btn">NO</button>
+                        </div>
+                    </div>
 
+                    <div id="map-container-wrapper" class="hidden">
+                        <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación:</p>
+                        <div id="delivery-map"></div>
+                        <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="width:100%; margin-top:10px;">Confirmar ubicación</button>
+                    </div>
+
+                    <p id="location-status" class="location-status-msg"></p>
+
+                    <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
+                </form>
+            </div>
+        </div>
+    </section>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
