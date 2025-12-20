@@ -1,298 +1,565 @@
 // =============================================
 //         ¡CONFIGURACIÓN DE SUPABASE!
 // =============================================
-const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; // Pon tu URL aquí
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; // Pon tu Key aquí
+const SUPABASE_URL = 'https://lflwrzeqfdtgowoqdhpq.supabase.co'; 
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxmbHdyemVxZmR0Z293b3FkaHBxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMzMzYyODAsImV4cCI6MjA3ODkxMjI4MH0.LLUahTSOvWcc-heoq_DsvXvVbvyjT24dm0E4SqKahOA'; 
 
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
+// VARIABLES GLOBALES
+let products = [];
+let categories = [];
+let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
+let currentCategoryFilter = 'todos';
+let currentSearchTerm = '';
+let adminSelectedId = null; // Para el checkbox del admin
+
 document.addEventListener('DOMContentLoaded', () => {
-
-    // --- VARIABLES DE ESTADO ---
-    let products = [];
-    let categories = [];
-    let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
-    let currentCategoryFilter = 'todos';
-    let currentPage = 1;
-    const itemsPerPage = 100;
     
-    // --- SELECTORES ---
-    const views = { login: document.getElementById('login-view'), admin: document.getElementById('admin-view'), store: document.getElementById('store-view') };
-    
-    const searchInputDesk = document.getElementById('search-input');
-    const searchInputMob = document.getElementById('mobile-search-input');
-    
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const mobileSidebar = document.getElementById('mobile-sidebar');
-    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const mobileCatsToggle = document.getElementById('mobile-cats-toggle');
-    const mobileCatsContent = document.getElementById('mobile-cats-content');
-    const mobileAboutLink = document.getElementById('mobile-about-link');
-    const mobileAdminLink = document.getElementById('mobile-admin-link'); 
-    const desktopAboutBtn = document.getElementById('about-us-btn');
+    // Referencias DOM principales
+    const views = {
+        login: document.getElementById('login-view'),
+        admin: document.getElementById('admin-view'),
+        store: document.getElementById('store-view')
+    };
 
-    const loginForm = document.getElementById('login-form');
-    const addProductForm = document.getElementById('add-product-form');
-    const categoryForm = document.getElementById('category-form');
-    const urlInputsContainer = document.getElementById('url-inputs-container');
-    const addUrlBtn = document.getElementById('add-url-btn');
-    const productStock = document.getElementById('product-stock');
-    const discountType = document.getElementById('discount-type');
-    const discountValue = document.getElementById('discount-value');
+    // --- CARGAR DATOS INICIALES ---
+    loadProducts();
+    updateCartUI();
 
-    const checkoutForm = document.getElementById('checkout-form');
-    let map = null, marker = null, selectedCoordinates = null;
+    // =============================================
+    //            LÓGICA TIENDA (CLIENTE)
+    // =============================================
 
-    // --- TOAST ---
-    if (!document.getElementById('toast-notification')) {
-        const d = document.createElement('div'); d.id='toast-notification'; d.className='toast-notification'; document.body.appendChild(d);
+    async function loadProducts() {
+        // Cargar Categorías
+        let { data: catData, error: catError } = await sb.from('categories').select('*');
+        if (!catError) {
+            categories = catData;
+            renderCategories();
+        }
+
+        // Cargar Productos
+        let { data: prodData, error: prodError } = await sb.from('products').select('*');
+        if (!prodError) {
+            products = prodData;
+            renderStore();
+            // Si estamos en admin, actualizar tabla también
+            if (!views.admin.classList.contains('hidden')) renderAdminTable();
+        }
     }
-    window.showToast = (msg, type='success') => {
-        const t = document.getElementById('toast-notification'); t.textContent=msg; t.className=`toast-notification show toast-${type}`;
-        setTimeout(()=>t.classList.remove('show'), 3000);
-    };
 
-    // --- UTILS ---
-    function formatPriceHTML(p) { const ps = parseFloat(p).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}).split(','); return ps.length===2 ? `${ps[0]}<span class="decimal-small">,${ps[1]}</span>` : ps[0]; }
-    function calculateFinalPrice(p, type, val) { let f = parseFloat(p); if(type==='percent' && val>0) f = p - (p*(val/100)); else if(type==='fixed' && val>0) f = p - val; return { original: parseFloat(p), final: Math.max(0, f), hasDiscount: f < p }; }
-
-    // --- NAVEGACIÓN ---
-    function showView(name) { Object.values(views).forEach(v => v.classList.add('hidden')); views[name].classList.remove('hidden'); }
-    
-    // Sidebar
-    const toggleSidebar = (show) => {
-        if(show) { mobileSidebar.classList.add('open'); sidebarOverlay.classList.add('show'); }
-        else { mobileSidebar.classList.remove('open'); sidebarOverlay.classList.remove('show'); }
-    };
-    mobileMenuBtn.onclick = () => toggleSidebar(true);
-    closeSidebarBtn.onclick = () => toggleSidebar(false);
-    sidebarOverlay.onclick = () => toggleSidebar(false);
-    mobileCatsToggle.onclick = () => mobileCatsContent.classList.toggle('show');
-
-    // Footer Scroll
-    const scrollToFooter = () => { document.getElementById('footer-section').scrollIntoView({behavior: 'smooth'}); toggleSidebar(false); };
-    desktopAboutBtn.onclick = scrollToFooter;
-    mobileAboutLink.onclick = (e) => { e.preventDefault(); scrollToFooter(); };
-
-    // Login logic
-    document.getElementById('admin-login-btn').onclick = () => showView('login');
-    mobileAdminLink.onclick = () => { toggleSidebar(false); showView('login'); }; 
-    document.getElementById('go-to-store-btn').onclick = () => showView('store');
-    document.getElementById('admin-logout-btn').onclick = async () => { await sb.auth.signOut(); showView('login'); };
-    
-    loginForm.onsubmit = async (e) => {
-        e.preventDefault();
-        const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('username').value, password: document.getElementById('password').value });
-        if(error) document.getElementById('login-error').textContent = 'Error credenciales';
-        else { showView('admin'); loadDataFromServer(); }
-    };
-
-    // --- BÚSQUEDA ---
-    const handleSearch = (e) => {
-        const val = e.target.value;
-        if(searchInputDesk.value !== val) searchInputDesk.value = val;
-        if(searchInputMob.value !== val) searchInputMob.value = val;
-        currentPage = 1; 
-        renderProducts();
+    // Renderizar Categorías en Header y Sidebar
+    function renderCategories() {
+        const container = document.getElementById('categories-container');
+        const sidebarList = document.getElementById('sidebar-categories');
         
-        // CERRAR SIDEBAR SI ES ENTER
-        if (e.key === 'Enter') {
-            toggleSidebar(false);
-            searchInputMob.blur();
+        // Header
+        let html = `<button class="cat-btn active" data-cat="todos">Todos</button>`;
+        categories.forEach(c => {
+            html += `<button class="cat-btn" data-cat="${c.name}">${c.name}</button>`;
+        });
+        container.innerHTML = html;
+
+        // Sidebar
+        let sidebarHtml = `<li onclick="applySidebarCategory('todos')">Todos</li>`;
+        categories.forEach(c => {
+            sidebarHtml += `<li onclick="applySidebarCategory('${c.name}')">${c.name}</li>`;
+        });
+        sidebarList.innerHTML = sidebarHtml;
+
+        // Eventos Header
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                // RESETEO DE BÚSQUEDA AL CAMBIAR CATEGORÍA
+                currentCategoryFilter = btn.dataset.cat;
+                currentSearchTerm = ''; 
+                document.getElementById('search-input').value = '';
+                
+                renderStore();
+            });
+        });
+    }
+
+    // Renderizar Grid de Productos
+    function renderStore() {
+        const container = document.getElementById('products-container');
+        container.innerHTML = '';
+
+        const filtered = products.filter(p => {
+            const matchCat = currentCategoryFilter === 'todos' || p.category === currentCategoryFilter;
+            const matchSearch = p.title.toLowerCase().includes(currentSearchTerm.toLowerCase());
+            return matchCat && matchSearch;
+        });
+
+        filtered.forEach(p => {
+            // Calcular precio con descuento
+            const discount = p.discount_value || 0;
+            const finalPrice = discount > 0 ? (p.price * (1 - discount/100)) : p.price;
+            
+            const div = document.createElement('div');
+            div.className = 'product-card';
+            div.innerHTML = `
+                ${discount > 0 ? `<div class="discount-badge">-${discount}%</div>` : ''}
+                <img src="${p.image_url || 'https://via.placeholder.com/150'}" class="product-img" alt="${p.title}">
+                <div class="product-info">
+                    <h3 class="product-title">${p.title}</h3>
+                    <div class="product-price-row">
+                        ${discount > 0 ? `<span class="old-price">Bs.${p.price}</span>` : ''}
+                        <span class="new-price">Bs.${finalPrice.toFixed(2)}</span>
+                    </div>
+                    <button class="add-btn" onclick="addToCart(${p.id})">Agregar</button>
+                </div>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    // Buscador Principal
+    document.getElementById('search-btn').addEventListener('click', () => {
+        currentSearchTerm = document.getElementById('search-input').value;
+        renderStore();
+    });
+    document.getElementById('search-input').addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') {
+            currentSearchTerm = e.target.value;
+            renderStore();
+        }
+    });
+
+    // Menú Hamburguesa & Buscador Móvil
+    document.getElementById('menu-toggle').onclick = () => {
+        document.getElementById('sidebar').classList.add('show');
+        document.getElementById('sidebar-overlay').classList.add('show');
+    };
+    const closeSidebar = () => {
+        document.getElementById('sidebar').classList.remove('show');
+        document.getElementById('sidebar-overlay').classList.remove('show');
+    };
+    document.getElementById('close-sidebar').onclick = closeSidebar;
+    document.getElementById('sidebar-overlay').onclick = closeSidebar;
+
+    document.getElementById('sidebar-search-input').addEventListener('keyup', (e) => {
+        if(e.key === 'Enter') {
+            currentSearchTerm = e.target.value;
+            currentCategoryFilter = 'todos'; // Reset cat
+            renderStore();
+            closeSidebar();
+        }
+    });
+    
+    window.applySidebarCategory = (cat) => {
+        currentCategoryFilter = cat;
+        currentSearchTerm = ''; // Reset búsqueda
+        document.getElementById('search-input').value = '';
+        renderStore();
+        closeSidebar();
+    };
+
+    // --- CARRITO ---
+    window.toggleCart = () => {
+        document.getElementById('cart-modal').classList.toggle('hidden');
+    };
+    
+    window.addToCart = (id) => {
+        const prod = products.find(p => p.id === id);
+        const existing = cart.find(c => c.id === id);
+        
+        // Calcular precio real (con descuento si aplica)
+        const discount = prod.discount_value || 0;
+        const realPrice = discount > 0 ? (prod.price * (1 - discount/100)) : prod.price;
+
+        if (existing) {
+            existing.quantity++;
+        } else {
+            cart.push({ ...prod, price: realPrice, quantity: 1, originalPrice: prod.price });
+        }
+        updateCartUI();
+        showToast();
+    };
+
+    window.updateCartItem = (id, change) => {
+        const item = cart.find(c => c.id === id);
+        if (item) {
+            item.quantity += change;
+            if (item.quantity <= 0) cart = cart.filter(c => c.id !== id);
+            updateCartUI();
         }
     };
-    searchInputDesk.addEventListener('input', handleSearch);
-    searchInputMob.addEventListener('keyup', handleSearch); 
 
-    // --- RENDERIZADO ---
-    function renderProducts() {
-        const grid = document.getElementById('product-grid');
-        grid.innerHTML = '';
+    window.removeFromCart = (id) => {
+        cart = cart.filter(c => c.id !== id);
+        updateCartUI();
+    };
+
+    function updateCartUI() {
+        localStorage.setItem('sirari_cart', JSON.stringify(cart));
+        document.getElementById('cart-count').innerText = cart.reduce((acc, c) => acc + c.quantity, 0);
         
-        const term = searchInputDesk.value.toLowerCase().trim();
+        const container = document.getElementById('cart-items');
+        container.innerHTML = '';
+        let total = 0;
+
+        cart.forEach(c => {
+            total += c.price * c.quantity;
+            container.innerHTML += `
+                <div class="cart-item">
+                    <div class="item-details">
+                        <h4>${c.title}</h4>
+                        <p>Bs. ${(c.price * c.quantity).toFixed(2)}</p>
+                    </div>
+                    <div class="qty-selector">
+                        <button class="cart-qty-btn" onclick="updateCartItem(${c.id}, -1)">-</button>
+                        <span class="cart-qty-value">${c.quantity}</span>
+                        <button class="cart-qty-btn" onclick="updateCartItem(${c.id}, 1)">+</button>
+                    </div>
+                    <button class="cart-remove-btn" onclick="removeFromCart(${c.id})">&times;</button>
+                </div>
+            `;
+        });
+        document.getElementById('cart-total-price').innerText = total.toFixed(2);
+    }
+
+    function showToast() {
+        const t = document.getElementById('toast');
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 2000);
+    }
+
+    // --- CHECKOUT & MAPA ---
+    document.getElementById('checkout-btn').onclick = () => {
+        if (cart.length === 0) return alert("El carrito está vacío");
+        document.getElementById('cart-modal').classList.add('hidden');
+        document.getElementById('checkout-modal').classList.remove('hidden');
+    };
+    window.closeCheckout = () => document.getElementById('checkout-modal').classList.add('hidden');
+
+    // Lógica Mapa (Simplificada)
+    let map, marker, selectedCoordinates = null;
+    function initMap() {
+        if(!map) {
+            map = L.map('delivery-map').setView([-17.7833, -63.1821], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            map.on('click', (e) => {
+                if(marker) map.removeLayer(marker);
+                marker = L.marker(e.latlng).addTo(map);
+                selectedCoordinates = e.latlng;
+            });
+        }
+    }
+    
+    document.getElementById('btn-yes-location').onclick = () => {
+        document.getElementById('location-status').textContent = "✅ Ubicación confirmada (Texto)";
+        document.getElementById('checkout-submit-btn').classList.remove('hidden');
+        document.getElementById('location-question-step').classList.add('hidden');
+    };
+    document.getElementById('btn-no-location').onclick = () => {
+        document.getElementById('location-question-step').classList.add('hidden');
+        document.getElementById('map-container-wrapper').classList.remove('hidden');
+        initMap();
+    };
+    document.getElementById('confirm-map-location').onclick = () => {
+        if(!selectedCoordinates) return alert("Marca un punto en el mapa");
+        document.getElementById('map-container-wrapper').classList.add('hidden');
+        document.getElementById('location-status').textContent = "✅ Ubicación GPS guardada";
+        document.getElementById('checkout-submit-btn').classList.remove('hidden');
+    };
+
+    document.getElementById('checkout-form').onsubmit = (e) => {
+        e.preventDefault();
+        const name = document.getElementById('customer-name').value;
+        const ref = document.getElementById('customer-location').value;
+        const mapUrl = selectedCoordinates 
+            ? `https://www.google.com/maps?q=${selectedCoordinates.lat},${selectedCoordinates.lng}` 
+            : 'No GPS';
+        
+        let msg = `*NUEVO PEDIDO SIRARI* 📦\n\n👤 *Cliente:* ${name}\n📍 *Ref:* ${ref}\n🗺 *Mapa:* ${mapUrl}\n\n*PEDIDO:*`;
+        let total = 0;
+        cart.forEach(c => {
+            msg += `\n- ${c.title} (${c.quantity}) = Bs.${(c.price * c.quantity).toFixed(2)}`;
+            total += c.price * c.quantity;
+        });
+        msg += `\n\n💰 *TOTAL: Bs. ${total.toFixed(2)}*`;
+
+        window.open(`https://api.whatsapp.com/send?phone=59173164833&text=${encodeURIComponent(msg)}`, '_blank');
+        
+        cart = [];
+        updateCartUI();
+        window.closeCheckout();
+    };
+
+
+    // =============================================
+    //            LÓGICA ADMINISTRADOR (NUEVA)
+    // =============================================
+    
+    // Login Simulado
+    document.getElementById('go-to-admin').onclick = () => {
+        views.store.classList.add('hidden');
+        views.login.classList.remove('hidden');
+        closeSidebar();
+    };
+    document.getElementById('login-form').onsubmit = (e) => {
+        e.preventDefault();
+        const u = document.getElementById('username').value;
+        const p = document.getElementById('password').value;
+        if(u === 'admin@sirari.com' && p === 'admin123') {
+            views.login.classList.add('hidden');
+            views.admin.classList.remove('hidden');
+            renderAdminTable(); // Cargar tabla al entrar
+        } else {
+            document.getElementById('login-error').innerText = 'Credenciales incorrectas';
+        }
+    };
+    document.getElementById('admin-logout-btn').onclick = () => {
+        views.admin.classList.add('hidden');
+        views.store.classList.remove('hidden');
+    };
+
+    // --- 1. NAVEGACIÓN TABS ---
+    window.switchAdminTab = (tabId) => {
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active-tab'));
+        document.querySelectorAll('.admin-tab').forEach(t => t.classList.add('hidden-tab'));
+        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+
+        document.getElementById(tabId).classList.remove('hidden-tab');
+        document.getElementById(tabId).classList.add('active-tab');
+
+        if(tabId === 'tab-agregar') document.querySelector("button[onclick=\"switchAdminTab('tab-agregar')\"]").classList.add('active');
+        if(tabId === 'tab-productos') {
+            document.querySelector("button[onclick=\"switchAdminTab('tab-productos')\"]").classList.add('active');
+            applyAdminFilters(); // Refrescar tabla
+        }
+    };
+
+    // --- 2. BUSCAR POR CÓDIGO Y EDITAR ---
+    window.searchForEdit = () => {
+        const code = document.getElementById('admin-search-code').value.trim();
+        if (!code) return alert("Por favor ingresa un código.");
+        
+        const prod = products.find(p => p.code === code);
+        if (prod) {
+            fillAdminForm(prod);
+            alert(`Producto ${prod.title} encontrado.`);
+        } else {
+            alert("No se encontró ningún producto con ese código.");
+        }
+    };
+
+    // --- 3. GUARDAR PRODUCTO (NUEVO O EDITAR) ---
+    document.getElementById('product-form').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const id = document.getElementById('edit-product-id').value;
+        const title = document.getElementById('p-title').value;
+        const category = document.getElementById('p-category').value;
+        const price = parseFloat(document.getElementById('p-price').value);
+        const stock = parseInt(document.getElementById('p-stock').value);
+        const desc = document.getElementById('p-description').value;
+        const discountVal = parseInt(document.getElementById('p-discount').value) || 0;
+        // Generar código si no existe
+        const code = document.getElementById('p-code').value || 'SIRARI-' + Math.random().toString(36).substr(2, 5).toUpperCase();
+
+        const file = document.getElementById('p-image-file').files[0];
+        let imageUrl = document.getElementById('current-image-url').value;
+
+        // Subir Imagen
+        if (file) {
+            const fileName = `prod_${Date.now()}_${file.name}`;
+            const { error: upErr } = await sb.storage.from('products').upload(fileName, file);
+            if (upErr) return alert('Error subiendo imagen');
+            const { data } = sb.storage.from('products').getPublicUrl(fileName);
+            imageUrl = data.publicUrl;
+        }
+
+        const productData = {
+            title,
+            category,
+            price,
+            stock,
+            description: desc,
+            code,
+            discount_value: discountVal,
+            image_url: imageUrl
+        };
+
+        let error;
+        if (id) {
+            // Update
+            const res = await sb.from('products').update(productData).eq('id', id);
+            error = res.error;
+        } else {
+            // Insert
+            const res = await sb.from('products').insert([productData]);
+            error = res.error;
+        }
+
+        if (error) alert('Error al guardar: ' + error.message);
+        else {
+            alert('Guardado con éxito');
+            resetAdminForm();
+            loadProducts(); // Recargar todo
+            switchAdminTab('tab-productos');
+        }
+    };
+
+    // --- 4. RENDERIZAR TABLA CON FILTROS ---
+    window.applyAdminFilters = () => {
+        renderAdminTable();
+    };
+
+    window.renderAdminTable = () => {
+        const tbody = document.getElementById('admin-table-body');
+        tbody.innerHTML = '';
+        
+        // Llenar select categorías si está vacío
+        const catSelect = document.getElementById('f-cat');
+        if (catSelect.options.length <= 1) {
+            categories.forEach(c => catSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+        }
+
+        const fCat = document.getElementById('f-cat').value;
+        const fStock = document.getElementById('f-stock').value;
+        const fPrice = document.getElementById('f-price').value;
+        const fOffer = document.getElementById('f-offer').value;
+
         let filtered = products.filter(p => {
-            if (currentCategoryFilter === 'ofertas') { if (!(p.discount_type && p.discount_value > 0)) return false; }
-            else if (currentCategoryFilter !== 'todos' && p.category !== currentCategoryFilter) return false;
-            // IMPORTANTE: Ahora el filtro de texto se aplica SOBRE la categoría seleccionada
-            if (term && !p.title.toLowerCase().includes(term) && !p.code.toLowerCase().includes(term)) return false;
+            // Filtros
+            if (fCat !== 'all' && p.category !== fCat) return false;
+            
+            const s = p.stock || 0;
+            if (fStock !== 'all') {
+                const [min, max] = fStock.split('-').map(Number);
+                if (max && (s < min || s > max)) return false;
+            }
+
+            const pr = p.price;
+            if (fPrice !== 'all') {
+                const [min, max] = fPrice.split('-').map(Number);
+                if (max && (pr < min || pr > max)) return false;
+            }
+
+            const dVal = p.discount_value || 0;
+            if (fOffer !== 'all') {
+                if (fOffer === 'yes' && dVal === 0) return false;
+                if (fOffer !== 'yes' && dVal != fOffer) return false;
+            }
             return true;
         });
 
-        const totalPages = Math.ceil(filtered.length / itemsPerPage);
-        if (currentPage > totalPages) currentPage = totalPages || 1;
-        const productsToShow = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-        if (productsToShow.length === 0) {
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos.</p>';
-            renderPagination(0);
-            return;
-        }
-
-        productsToShow.forEach(p => {
-            const card = document.createElement('div'); card.className = 'product-card';
-            card.onclick = (e) => { if(!e.target.classList.contains('add-to-cart-btn')) showProductDetail(p.id); };
-            const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-            const badge = pricing.hasDiscount ? `<div class="discount-badge">-${p.discount_type==='percent'?p.discount_value+'%':p.discount_value+'Bs'}</div>` : '';
-            const stockMsg = p.stock > 20 ? '+20 Disp.' : (p.stock < 10 ? `¡Solo ${p.stock}!` : `${p.stock} Disp.`);
-            const priceHtml = pricing.hasDiscount 
-                ? `<span class="original-price">Bs.${p.price.toFixed(2)}</span> <span class="final-price discounted">Bs.${formatPriceHTML(pricing.final)}</span>`
-                : `<span class="final-price">Bs.${formatPriceHTML(p.price)}</span>`;
+        filtered.forEach((p, idx) => {
+            const dVal = p.discount_value || 0;
+            const final = dVal > 0 ? (p.price * (1 - dVal/100)) : p.price;
             
-            card.innerHTML = `
-                ${badge}
-                <div class="product-image-container"><img src="${p.images?.[0]||''}" class="product-image" loading="lazy"></div>
-                <div class="product-info">
-                    <h3 class="product-title">${p.title}</h3>
-                    <p class="product-code">${p.code}</p>
-                    <div class="price-container">${priceHtml}</div>
-                    <p class="stock-display ${p.stock<10?'low-stock':''}">${stockMsg}</p>
-                    <button class="add-to-cart-btn primary-btn" onclick="event.stopPropagation(); addToCart('${p.id}', 1)">Añadir al Carrito</button>
-                </div>
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><input type="checkbox" class="row-chk" value="${p.id}" onclick="handleCheck(this)"></td>
+                <td>${idx + 1}</td>
+                <td><strong>${p.title}</strong></td>
+                <td>${p.code || '-'}</td>
+                <td>${p.category}</td>
+                <td>Bs ${p.price}</td>
+                <td>${dVal > 0 ? dVal + '%' : ''}</td>
+                <td>Bs ${final.toFixed(2)}</td>
+                <td>${p.stock}</td>
             `;
-            grid.appendChild(card);
+            tbody.appendChild(tr);
         });
-        renderPagination(totalPages);
-    }
-
-    function renderPagination(totalPages) {
-        const container = document.getElementById('pagination-controls'); container.innerHTML = '';
-        if (totalPages <= 1) return;
-        const prevBtn = document.createElement('button'); prevBtn.innerText = '←'; prevBtn.className = 'page-btn'; prevBtn.disabled = currentPage === 1;
-        prevBtn.onclick = () => { currentPage--; renderProducts(); window.scrollTo({top:0, behavior:'smooth'}); }; container.appendChild(prevBtn);
-        for (let i = 1; i <= totalPages; i++) {
-            const btn = document.createElement('button'); btn.innerText = i; btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-            btn.onclick = () => { currentPage = i; renderProducts(); window.scrollTo({top:0, behavior:'smooth'}); }; container.appendChild(btn);
-        }
-        const nextBtn = document.createElement('button'); nextBtn.innerText = '→'; nextBtn.className = 'page-btn'; nextBtn.disabled = currentPage === totalPages;
-        nextBtn.onclick = () => { currentPage++; renderProducts(); window.scrollTo({top:0, behavior:'smooth'}); }; container.appendChild(nextBtn);
-    }
-
-    // --- DETALLE & COMPARTIR ---
-    let currentDetailQty = 1;
-    window.getDetailQtyValue = () => parseInt(document.getElementById('detail-qty-input')?.value || 1);
-    window.showProductDetail = (id) => {
-        const p = products.find(x => x.id == id); if(!p) return;
-        currentDetailQty = 1;
-        let thumbs = ''; if(p.images) p.images.forEach((url, i) => thumbs += `<img src="${url}" class="gallery-thumbnail ${i===0?'active':''}" onclick="document.getElementById('gallery-main-image').src='${url}'; document.querySelectorAll('.gallery-thumbnail').forEach(t=>t.classList.remove('active')); this.classList.add('active');">`);
-        const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-        const shareUrl = `${window.location.origin}${window.location.pathname}?p=${p.id}`;
-        const shareText = `Mira este producto en SIRARI: ${p.title} - Bs. ${pricing.final.toFixed(2)}`;
-        
-        document.getElementById('product-detail-content').innerHTML = `
-            <button class="close-modal" onclick="document.getElementById('product-detail-modal').classList.add('hidden')">×</button>
-            <div id="product-detail-gallery"><img src="${p.images?.[0]||''}" id="gallery-main-image"><div id="gallery-thumbnails">${thumbs}</div></div>
-            <div id="product-detail-info">
-                <h2 style="font-size:1.6rem;">${p.title}</h2>
-                <p style="color:#666; font-size:0.9rem;">Cód: ${p.code}</p>
-                <div style="margin: 15px 0;">${pricing.hasDiscount ? `<span class="original-price">Bs. ${p.price.toFixed(2)}</span><br><span class="final-price discounted">Bs. ${formatPriceHTML(pricing.final)}</span>` : `<span class="final-price">Bs. ${formatPriceHTML(p.price)}</span>`}</div>
-                <p style="margin-bottom:10px;"><b>Stock:</b> ${p.stock > 0 ? p.stock : '<span style="color:red">Agotado</span>'}</p>
-                <p class="product-full-description" style="white-space: pre-wrap; font-size: 0.95rem;">${p.description}</p>
-                <div class="detail-actions">
-                    <div class="qty-selector"><button class="qty-btn" onclick="updateDetailQty(-1)">-</button><input type="text" id="detail-qty-input" class="qty-input" value="1" readonly><button class="qty-btn" onclick="updateDetailQty(1, ${p.stock})">+</button></div>
-                    <button class="primary-btn" style="flex-grow:1; padding:12px;" onclick="addToCart('${p.id}', getDetailQtyValue()); document.getElementById('product-detail-modal').classList.add('hidden')">Añadir al Carrito</button>
-                </div>
-                <div class="share-section"><p class="share-title">Compartir producto:</p><div class="share-buttons">
-                    <a href="https://api.whatsapp.com/send?text=${encodeURIComponent(shareText+' '+shareUrl)}" target="_blank" class="share-btn wa"><i class="fab fa-whatsapp"></i></a>
-                    <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}" target="_blank" class="share-btn fb"><i class="fab fa-facebook-f"></i></a>
-                    <button class="share-btn copy" onclick="navigator.clipboard.writeText('${shareUrl}').then(()=>showToast('Link copiado'))"><i class="fas fa-link"></i></button>
-                </div></div>
-            </div>
-        `;
-        document.getElementById('product-detail-modal').classList.remove('hidden');
     };
-    window.updateDetailQty = (d, max) => { let n = currentDetailQty + d; if(n<1)n=1; if(n>max)n=max; currentDetailQty=n; document.getElementById('detail-qty-input').value = n; };
 
-    // --- CARGA INICIAL ---
-    async function loadDataFromServer() {
-        const [sess, cats, prods] = await Promise.all([sb.auth.getSession(), sb.from('categories').select('*'), sb.from('products').select('*').order('id', {ascending: false})]);
-        categories = cats.data || []; products = prods.data || [];
-        
-        renderCategoryFilters(); renderMobileCategories(); renderProducts();
-        
-        const urlParams = new URLSearchParams(window.location.search);
-        const pid = urlParams.get('p'); if (pid) { showProductDetail(pid); window.history.replaceState({}, document.title, window.location.pathname); }
+    // --- 5. SELECCIÓN Y EDICIÓN ---
+    window.handleCheck = (chk) => {
+        document.querySelectorAll('.row-chk').forEach(c => { if(c!==chk) c.checked = false; });
+        const btn = document.getElementById('btn-global-edit');
+        if (chk.checked) {
+            adminSelectedId = chk.value;
+            btn.classList.remove('hidden');
+        } else {
+            adminSelectedId = null;
+            btn.classList.add('hidden');
+        }
+    };
 
-        if (sess.data.session) { showView('admin'); renderCategoryList(); renderAdminList(); fillCategorySelect(); } else { showView('store'); }
+    window.editSelectedRow = () => {
+        if(!adminSelectedId) return;
+        const prod = products.find(p => p.id == adminSelectedId);
+        if(prod) {
+            fillAdminForm(prod);
+            switchAdminTab('tab-agregar');
+        }
+    };
+
+    function fillAdminForm(p) {
+        document.getElementById('edit-product-id').value = p.id;
+        document.getElementById('p-title').value = p.title;
+        document.getElementById('p-code').value = p.code || '';
+        document.getElementById('p-category').value = p.category;
+        document.getElementById('p-price').value = p.price;
+        document.getElementById('p-stock').value = p.stock;
+        document.getElementById('p-discount').value = p.discount_value || 0;
+        document.getElementById('p-description').value = p.description || '';
+        document.getElementById('current-image-url').value = p.image_url;
+        document.getElementById('img-status-msg').style.display = 'block';
     }
 
-    // --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
-    // Reseteamos el buscador al hacer clic en una categoría
-    function renderCategoryFilters() {
-        const c = document.getElementById('category-filters'); c.innerHTML = '';
-        const add = (t,v) => { 
-            const b = document.createElement('button'); 
-            b.className=`category-filter-btn ${currentCategoryFilter===v?'active':''}`; 
-            b.textContent=t; 
-            b.onclick=()=>{
-                // 1. Limpiar buscador
-                searchInputDesk.value = '';
-                searchInputMob.value = '';
-                // 2. Filtrar
-                currentCategoryFilter=v; 
-                currentPage=1; 
-                renderCategoryFilters(); 
-                renderMobileCategories(); 
-                renderProducts();
-            }; 
-            c.appendChild(b); 
-        };
-        add('Ver Todos','todos'); if(products.some(p=>(p.discount_type&&p.discount_value>0))) add('🔥 Ofertas','ofertas'); categories.forEach(x=>add(x.name,x.name)); if(!categories.find(x=>x.name==='otros')) add('otros','otros');
-    }
-    
-    function renderMobileCategories() {
-        mobileCatsContent.innerHTML = '';
-        const add = (t,v) => { 
-            const b = document.createElement('button'); 
-            b.className='sidebar-link'; 
-            b.style.textAlign='left'; 
-            b.innerHTML=(currentCategoryFilter===v?`<b>${t}</b>`:t); 
-            b.onclick=()=>{
-                // 1. Limpiar buscador
-                searchInputDesk.value = '';
-                searchInputMob.value = '';
-                // 2. Filtrar
-                currentCategoryFilter=v; 
-                currentPage=1; 
-                renderCategoryFilters(); 
-                renderMobileCategories(); 
-                renderProducts(); 
-                toggleSidebar(false);
-            }; 
-            mobileCatsContent.appendChild(b); 
-        };
-        add('Ver Todos','todos'); if(products.some(p=>(p.discount_type&&p.discount_value>0))) add('🔥 Ofertas','ofertas'); categories.forEach(x=>add(x.name,x.name)); if(!categories.find(x=>x.name==='otros')) add('otros','otros');
-    }
+    window.resetAdminForm = () => {
+        document.getElementById('product-form').reset();
+        document.getElementById('edit-product-id').value = '';
+        document.getElementById('img-status-msg').style.display = 'none';
+        adminSelectedId = null;
+    };
 
-    // --- CARRITO, ADMIN, MAPA... ---
-    window.addToCart=(id,q)=>{ q=parseInt(q)||1; const p=products.find(x=>x.id==id); if(!p||p.stock<1)return showToast("Agotado","error"); const ex=cart.find(i=>i.id==id); if(ex){if(ex.quantity+q>p.stock)return showToast("Stock insuficiente","error"); ex.quantity+=q;}else{if(q>p.stock)return showToast("Stock insuficiente","error"); const pr=calculateFinalPrice(p.price,p.discount_type,p.discount_value); cart.push({id:p.id,title:p.title,price:pr.final,image:p.images?.[0]||'',quantity:q,maxStock:p.stock});} saveCart(); showToast("Añadido"); };
-    window.changeCartQty=(i,d)=>{const it=cart[i]; const n=it.quantity+d; if(n<1||n>it.maxStock)return; it.quantity=n; saveCart(); renderCartHTML();};
-    window.removeFromCart=(i)=>{cart.splice(i,1); saveCart(); renderCartHTML(); showToast("Eliminado");};
-    function renderCartHTML(){const l=document.getElementById('cart-items'); l.innerHTML=''; let t=0; if(!cart.length)l.innerHTML='<p style="text-align:center">Vacío</p>'; cart.forEach((i,x)=>{t+=i.price*i.quantity; l.innerHTML+=`<div class="cart-item"><img src="${i.image}" class="cart-item-img"><div class="cart-item-info"><div class="cart-item-title">${i.title}</div><div>Bs.${i.price.toFixed(2)}</div></div><div class="cart-qty-selector"><button class="cart-qty-btn" onclick="changeCartQty(${x},-1)">-</button><div class="cart-qty-value">${i.quantity}</div><button class="cart-qty-btn" onclick="changeCartQty(${x},1)">+</button></div><button class="cart-remove-btn" onclick="removeFromCart(${x})"><i class="fas fa-trash"></i></button></div>`;}); document.getElementById('cart-total').textContent=t.toFixed(2); document.getElementById('checkout-btn').disabled=!cart.length;}
-    document.getElementById('cart-btn').onclick=()=>{renderCartHTML(); document.getElementById('cart-modal').classList.remove('hidden');};
-    function saveCart(){localStorage.setItem('sirari_cart', JSON.stringify(cart)); document.getElementById('cart-count').textContent=cart.reduce((a,b)=>a+b.quantity,0);}
-    
-    // Funciones Admin
-    function addUrlInput(v=''){const w=document.createElement('div'); w.className='url-input-wrapper'; const i=document.createElement('input'); i.value=v; const b=document.createElement('button'); b.textContent='X'; b.className='remove-url-btn'; b.onclick=()=>w.remove(); w.append(i,b); urlInputsContainer.append(w);}
-    addUrlBtn.onclick=()=>addUrlInput();
-    addProductForm.onsubmit=async(e)=>{e.preventDefault(); const imgs=[...urlInputsContainer.querySelectorAll('input')].map(i=>i.value.trim()).filter(x=>x); const data={title:document.getElementById('product-title').value, description:document.getElementById('product-desc').value, price:parseFloat(document.getElementById('product-price').value), stock:parseInt(productStock.value), category:document.getElementById('product-category').value, images:imgs, discount_type:discountType.value||null, discount_value:parseFloat(discountValue.value)||0}; const eid=document.getElementById('product-edit-id').value; const {error}=eid?await sb.from('products').update(data).eq('id',eid):await sb.from('products').insert([{...data,code:'SIRARI-'+Math.random().toString(36).substr(2,6).toUpperCase()}]); if(error)alert(error.message); else{showToast("Guardado"); loadDataFromServer(); resetAdminForm();}};
-    function resetAdminForm(){addProductForm.reset(); urlInputsContainer.innerHTML=''; addUrlInput(); document.getElementById('product-edit-id').value=''; document.getElementById('cancel-edit-btn').classList.add('hidden');}
-    window.deleteProduct=async(id)=>{if(confirm('¿Borrar?')){await sb.from('products').delete().eq('id',id); loadDataFromServer();}};
-    window.editProduct=(id)=>{const p=products.find(x=>x.id==id); document.getElementById('product-edit-id').value=p.id; document.getElementById('product-title').value=p.title; document.getElementById('product-desc').value=p.description; document.getElementById('product-price').value=p.price; document.getElementById('product-stock').value=p.stock; document.getElementById('product-category').value=p.category; discountType.value=p.discount_type||""; discountValue.value=p.discount_value||""; urlInputsContainer.innerHTML=''; (p.images||[]).forEach(u=>addUrlInput(u)); if(!p.images?.length)addUrlInput(); document.getElementById('cancel-edit-btn').classList.remove('hidden'); window.scrollTo(0,0);};
-    function renderAdminList(){const l=document.getElementById('admin-product-list'); l.innerHTML=''; products.forEach(p=>l.innerHTML+=`<div class="admin-product-item"><img src="${p.images?.[0]||''}"><div><h4>${p.title}</h4></div><button class="action-btn edit-btn" onclick="editProduct('${p.id}')">Edit</button><button class="action-btn delete-btn" onclick="deleteProduct('${p.id}')">X</button></div>`);}
-    function fillCategorySelect(){const s=document.getElementById('product-category'); s.innerHTML=''; const c=[...categories]; if(!c.find(x=>x.name==='otros'))c.push({name:'otros'}); c.forEach(x=>s.innerHTML+=`<option value="${x.name}">${x.name}</option>`);}
-    categoryForm.onsubmit=async(e)=>{e.preventDefault(); const n=document.getElementById('category-name-input').value.trim().toLowerCase(); if(!n||categories.some(c=>c.name===n))return alert('Inválido'); await sb.from('categories').insert([{name:n}]); document.getElementById('category-name-input').value=''; loadDataFromServer(); showToast('Categoría creada');};
-    function renderCategoryList(){const l=document.getElementById('category-list'); l.innerHTML=''; const c=[...categories]; if(!c.find(x=>x.name==='otros'))c.push({id:'virtual',name:'otros'}); c.forEach(x=>{const b=x.name!=='otros'?`<button class="action-btn delete-btn" onclick="deleteCategory('${x.id}','${x.name}')">X</button>`:''; l.innerHTML+=`<div class="category-item"><span>${x.name}</span>${b}</div>`;});}
-    window.deleteCategory=async(i,n)=>{if(confirm(`¿Borrar ${n}?`)){await sb.from('products').update({category:'otros'}).eq('category',n); await sb.from('categories').delete().eq('id',i); loadDataFromServer();}};
+    // --- 6. EXPORTAR ---
+    window.toggleExportMenu = () => document.getElementById('export-dropdown').classList.toggle('hidden');
 
-    // Checkout
-    function initMap(){const lat=-17.7833, lng=-63.1821; if(map)map.remove(); map=L.map('delivery-map').setView([lat,lng],13); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); marker=L.marker([lat,lng],{draggable:true}).addTo(map); marker.on('dragend',e=>selectedCoordinates=marker.getLatLng()); map.on('click',e=>{marker.setLatLng(e.latlng);selectedCoordinates=e.latlng;}); selectedCoordinates={lat,lng}; setTimeout(()=>map.invalidateSize(),200);}
-    document.getElementById('btn-yes-location').onclick=async()=>{document.getElementById('location-question-step').classList.add('hidden'); document.getElementById('location-status').textContent="Obteniendo GPS..."; try{const p=await new Promise((r,j)=>navigator.geolocation.getCurrentPosition(r,j,{timeout:10000})); selectedCoordinates={lat:p.coords.latitude,lng:p.coords.longitude}; document.getElementById('location-status').textContent="✅ GPS Ok"; document.getElementById('checkout-submit-btn').classList.remove('hidden');}catch(e){document.getElementById('btn-no-location').click();}};
-    document.getElementById('btn-no-location').onclick=()=>{document.getElementById('location-question-step').classList.add('hidden'); document.getElementById('map-container-wrapper').classList.remove('hidden'); initMap();};
-    document.getElementById('confirm-map-location').onclick=()=>{document.getElementById('map-container-wrapper').classList.add('hidden'); document.getElementById('location-status').textContent="✅ Mapa Ok"; document.getElementById('checkout-submit-btn').classList.remove('hidden');};
-    checkoutForm.onsubmit=(e)=>{e.preventDefault(); const n=document.getElementById('customer-name').value, r=document.getElementById('customer-location').value, l=selectedCoordinates?`https://maps.google.com/?q=${selectedCoordinates.lat},${selectedCoordinates.lng}`:'No map'; let m=`*PEDIDO SIRARI* 🛍️\n*Cliente:* ${n}\n*Ref:* ${r}\n*Ubicación:* ${l}\n\n*ITEMS:*`; let t=0; cart.forEach(i=>{t+=i.price*i.quantity; m+=`\n- ${i.title} (${i.quantity}) = Bs.${(i.price*i.quantity).toFixed(2)}`;}); m+=`\n\n*TOTAL: Bs. ${t.toFixed(2)}*`; window.open(`https://api.whatsapp.com/send?phone=59173164833&text=${encodeURIComponent(m)}`,'_blank'); cart=[]; saveCart(); document.getElementById('checkout-modal').classList.add('hidden'); document.getElementById('location-question-step').classList.remove('hidden'); document.getElementById('map-container-wrapper').classList.add('hidden'); document.getElementById('checkout-submit-btn').classList.add('hidden');};
+    window.exportData = (type) => {
+        // Preparar datos limpios
+        const dataClean = products.map(p => {
+            const dVal = p.discount_value || 0;
+            return {
+                ID: p.id,
+                Producto: p.title,
+                Codigo: p.code,
+                Categoria: p.category,
+                Precio: p.price,
+                Descuento_Porc: dVal,
+                Precio_Final: (p.price * (1 - dVal/100)).toFixed(2),
+                Stock: p.stock,
+                Descripcion: p.description
+            };
+        });
 
-    document.querySelectorAll('.close-modal').forEach(b=>b.onclick=(e)=>e.target.closest('.modal').classList.add('hidden'));
-    loadDataFromServer();
+        if (type === 'xlsx') {
+            const ws = XLSX.utils.json_to_sheet(dataClean);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Inventario");
+            XLSX.writeFile(wb, "Sirari_Reporte.xlsx");
+        } 
+        else if (type === 'csv') {
+            let csv = "ID,Producto,Codigo,Categoria,Precio,Desc%,Final,Stock\n";
+            dataClean.forEach(r => {
+                csv += `${r.ID},"${r.Producto}",${r.Codigo},${r.Categoria},${r.Precio},${r.Descuento_Porc},${r.Precio_Final},${r.Stock}\n`;
+            });
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'sirari_reporte.csv'; a.click();
+        }
+        else if (type === 'sql') {
+            let sql = "-- Export SQL Sirari\n";
+            dataClean.forEach(r => {
+                sql += `INSERT INTO products (title, code, price, stock) VALUES ('${r.Producto}', '${r.Codigo}', ${r.Precio}, ${r.Stock});\n`;
+            });
+            const blob = new Blob([sql], { type: 'text/plain' });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'sirari_backup.sql'; a.click();
+        }
+        document.getElementById('export-dropdown').classList.add('hidden');
+    };
+
 });
