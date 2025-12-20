@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirari Store</title>
+    <title>Sirari</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -36,7 +36,7 @@
                     <div class="menu-category">USUARIO</div>
                     <div class="menu-item active-user">
                         <i class="fa-solid fa-user-shield"></i>
-                        <span>Admin Principal</span>
+                        <span>Administrador</span>
                     </div>
 
                     <div class="menu-category">GESTIÓN</div>
@@ -68,7 +68,7 @@
                     <div class="tab-header">
                         <h2>Gestión de Producto</h2>
                         <div class="search-edit-wrapper">
-                            <input type="text" id="admin-search-code" placeholder="Ingresa Código Único para editar...">
+                            <input type="text" id="admin-search-code" placeholder="Código Único (ej: SIRARI-123)">
                             <button class="btn-primary" onclick="searchForEdit()">
                                 <i class="fa-solid fa-magnifying-glass"></i> Buscar y Editar
                             </button>
@@ -86,7 +86,7 @@
                                     <input type="text" id="p-title" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Código (Automático si está vacío)</label>
+                                    <label>Código (Automático si vacío)</label>
                                     <input type="text" id="p-code" placeholder="Ej: SIRARI-X1Y2">
                                 </div>
                                 <div class="form-group">
@@ -99,7 +99,7 @@
                                     <input type="number" id="p-price" step="0.01" required>
                                 </div>
                                 <div class="form-group">
-                                    <label>Porcentaje Descuento (%)</label>
+                                    <label>Descuento (%)</label>
                                     <input type="number" id="p-discount" placeholder="0" min="0" max="100">
                                 </div>
                                 <div class="form-group">
@@ -159,7 +159,7 @@
                         </select>
                         <select id="f-offer" onchange="applyAdminFilters()">
                             <option value="all">Todas Ofertas</option>
-                            <option value="yes">En Oferta (Cualquiera)</option>
+                            <option value="yes">En Oferta</option>
                             <option value="3">3%</option>
                             <option value="5">5%</option>
                             <option value="10">10%</option>
@@ -200,7 +200,6 @@
                         </table>
                     </div>
                 </div>
-
             </main>
         </div>
     </section>
@@ -223,7 +222,7 @@
 
             <div class="categories-scroll" id="categories-container">
                 <button class="cat-btn active" data-cat="todos">Todos</button>
-                </div>
+            </div>
         </header>
 
         <div class="products-grid" id="products-container">
@@ -285,7 +284,6 @@
                 </div>
 
                 <p id="location-status" class="location-status-msg"></p>
-
                 <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
             </form>
         </div>
