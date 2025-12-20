@@ -17,7 +17,7 @@
             <form id="login-form">
                 <input type="text" id="username" placeholder="Email (admin@sirari.com)" required>
                 <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="submit">Ingresar</button>
+                <button type="submit" class="primary-btn">Ingresar</button>
             </form>
             <p id="login-error" class="error-msg"></p>
             <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
@@ -25,148 +25,115 @@
     </section>
 
     <section id="admin-view" class="view hidden">
-        <div class="panel-layout">
+        <div class="admin-layout">
             
-            <aside class="panel-lateral-admin">
-                <div class="panel-logo">
-                    <h2>SIRARI <small>Admin</small></h2>
-                </div>
+            <aside class="admin-sidebar">
+                <h2 style="color: var(--color-principal); text-align: center; margin-bottom: 20px;">PANEL</h2>
+                
+                <nav class="admin-nav">
+                    <button class="secondary-btn active-nav" onclick="switchAdminTab('tab-agregar')">
+                        <i class="fa-solid fa-plus"></i> Agregar Producto
+                    </button>
+                    <button class="secondary-btn" onclick="switchAdminTab('tab-lista')">
+                        <i class="fa-solid fa-list"></i> Ver Inventario
+                    </button>
+                    <button class="secondary-btn" style="opacity:0.5; cursor:not-allowed;">Ventas</button>
+                    <button class="secondary-btn" style="opacity:0.5; cursor:not-allowed;">Configuración</button>
+                </nav>
 
-                <div class="panel-menu">
-                    <div class="panel-label">PRINCIPAL</div>
-                    <div class="panel-btn active" onclick="switchPanelTab('tab-agregar')">
-                        <i class="fa-solid fa-circle-plus"></i> Agregar / Editar
-                    </div>
-                    <div class="panel-btn" onclick="switchPanelTab('tab-lista')">
-                        <i class="fa-solid fa-boxes-stacked"></i> Inventario
-                    </div>
-
-                    <div class="panel-label">HERRAMIENTAS</div>
-                    <div class="panel-btn disabled"><i class="fa-solid fa-chart-line"></i> Ventas</div>
-                    <div class="panel-btn disabled"><i class="fa-solid fa-users"></i> Clientes</div>
-                </div>
-
-                <div class="panel-footer">
-                    <button id="admin-logout-btn" class="panel-logout-btn">
-                        <i class="fa-solid fa-right-from-bracket"></i> Salir
+                <div style="margin-top: auto;">
+                    <button id="admin-logout-btn" class="secondary-btn" style="background:#333; color:white;">
+                        <i class="fa-solid fa-sign-out-alt"></i> Salir
                     </button>
                 </div>
             </aside>
 
-            <main class="panel-content">
+            <main class="admin-content">
                 
-                <div id="tab-agregar" class="panel-tab active-tab">
-                    <div class="panel-header">
-                        <h2>Gestión de Producto</h2>
-                        <div class="panel-search-edit">
-                            <input type="text" id="admin-search-code" placeholder="Código (ej: SIRARI-123)">
-                            <button class="primary-btn small-btn" onclick="searchForEdit()">
-                                <i class="fa-solid fa-magnifying-glass"></i> Buscar
-                            </button>
+                <div id="tab-agregar" class="admin-tab">
+                    <div class="admin-header-box">
+                        <h2>Gestionar Producto</h2>
+                        <div style="display:flex; gap:10px;">
+                            <input type="text" id="admin-search-code" placeholder="Buscar por código..." style="padding:8px;">
+                            <button class="primary-btn small-btn" onclick="searchForEdit()" style="margin:0;">Buscar</button>
                         </div>
                     </div>
 
-                    <div class="panel-card">
+                    <div class="form-container">
                         <form id="product-form">
                             <input type="hidden" id="edit-product-id">
                             
-                            <div class="panel-grid">
-                                <div class="p-group">
-                                    <label>Nombre del Producto</label>
+                            <div class="admin-grid">
+                                <div>
+                                    <label>Nombre</label>
                                     <input type="text" id="p-title" required>
                                 </div>
-                                <div class="p-group">
-                                    <label>Código (Automático si vacío)</label>
-                                    <input type="text" id="p-code" placeholder="Ej: SIRARI-X1Y2">
+                                <div>
+                                    <label>Código</label>
+                                    <input type="text" id="p-code" placeholder="Automático si vacío">
                                 </div>
-                                <div class="p-group">
+                                <div>
                                     <label>Categoría</label>
                                     <input type="text" id="p-category" list="category-list" required>
                                     <datalist id="category-list"></datalist>
                                 </div>
-                                <div class="p-group">
+                                <div>
                                     <label>Precio (Bs)</label>
                                     <input type="number" id="p-price" step="0.01" required>
                                 </div>
-                                <div class="p-group">
+                                <div>
                                     <label>Descuento (%)</label>
-                                    <input type="number" id="p-discount" placeholder="0" min="0" max="100">
+                                    <input type="number" id="p-discount" placeholder="0">
                                 </div>
-                                <div class="p-group">
+                                <div>
                                     <label>Stock</label>
-                                    <input type="number" id="p-stock" required min="0">
+                                    <input type="number" id="p-stock" required>
                                 </div>
-                                <div class="p-group full">
+                                <div style="grid-column: span 2;">
                                     <label>Descripción</label>
                                     <textarea id="p-description" rows="2"></textarea>
                                 </div>
-                                <div class="p-group full">
-                                    <label>URL de Imagen (Link)</label>
-                                    <input type="text" id="p-image-url" placeholder="Ej: https://i.imgur.com/foto.jpg">
-                                    <div id="img-preview-box" style="display:none; margin-top:10px;">
-                                        <p style="font-size:0.8rem; color:#666;">Vista previa:</p>
-                                        <img id="admin-img-preview" src="" style="height:80px; border-radius:4px; border:1px solid #ddd;">
-                                    </div>
+                                <div style="grid-column: span 2;">
+                                    <label>URL Imagen</label>
+                                    <input type="text" id="p-image-url" placeholder="https://...">
+                                    <img id="admin-img-preview" src="" style="height:50px; display:none; margin-top:5px;">
                                 </div>
                             </div>
-                            
-                            <div class="panel-actions">
+
+                            <div class="admin-actions">
                                 <button type="button" class="secondary-btn" onclick="resetAdminForm()">Limpiar</button>
-                                <button type="submit" class="primary-btn" style="width:auto;">Guardar Producto</button>
+                                <button type="submit" class="primary-btn">Guardar</button>
                             </div>
                         </form>
                     </div>
                 </div>
 
-                <div id="tab-lista" class="panel-tab hidden-tab">
-                    <div class="panel-header">
-                        <h2>Lista de Inventario</h2>
-                        <button id="btn-global-edit" class="panel-edit-btn hidden" onclick="editSelectedRow()">
-                            <i class="fa-solid fa-pen"></i> EDITAR SELECCIONADO
+                <div id="tab-lista" class="admin-tab hidden">
+                    <div class="admin-header-box">
+                        <h2>Inventario</h2>
+                        <button id="btn-global-edit" class="primary-btn small-btn hidden" onclick="editSelectedRow()" style="margin:0; background: var(--color-verde);">
+                            Editar Seleccionado
                         </button>
                     </div>
 
-                    <div class="panel-filters">
-                        <select id="f-cat" onchange="renderAdminTable()"><option value="all">Todas las Categorías</option></select>
+                    <div class="admin-filters">
+                        <select id="f-cat" onchange="renderAdminTable()"><option value="all">Categorías</option></select>
                         <select id="f-stock" onchange="renderAdminTable()">
-                            <option value="all">Todo Stock</option>
-                            <option value="1-10">Bajo (1-10)</option>
-                            <option value="10-50">Medio (10-50)</option>
-                            <option value="500+">Alto (+500)</option>
+                            <option value="all">Stock</option>
+                            <option value="low">Bajo (<10)</option>
+                            <option value="high">Alto (>100)</option>
                         </select>
-                        <select id="f-price" onchange="renderAdminTable()">
-                            <option value="all">Todo Precio</option>
-                            <option value="1-100">0 - 100 Bs</option>
-                            <option value="100-500">100 - 500 Bs</option>
-                            <option value="500+">+500 Bs</option>
-                        </select>
-                        <select id="f-offer" onchange="renderAdminTable()">
-                            <option value="all">Ofertas</option>
-                            <option value="yes">Con Descuento</option>
-                        </select>
-
-                        <div style="margin-left:auto; position:relative;">
-                            <button class="secondary-btn small-btn" onclick="toggleExportMenu()">Exportar <i class="fa-solid fa-chevron-down"></i></button>
-                            <div id="export-dropdown" class="panel-export-menu hidden">
-                                <div onclick="exportData('xlsx')">Excel</div>
-                                <div onclick="exportData('csv')">CSV</div>
-                                <div onclick="exportData('sql')">SQL</div>
-                            </div>
-                        </div>
+                        <button class="secondary-btn small-btn" onclick="exportData('xlsx')" style="width:auto; margin:0;">Exportar Excel</button>
                     </div>
 
-                    <div class="panel-table-wrap">
-                        <table class="panel-table">
+                    <div style="overflow-x:auto; background:white; padding:10px; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <table class="admin-table">
                             <thead>
                                 <tr>
-                                    <th width="30"></th>
-                                    <th>#</th>
+                                    <th>Sel</th>
                                     <th>Producto</th>
                                     <th>Código</th>
-                                    <th>Cat.</th>
                                     <th>Precio</th>
-                                    <th>Desc.</th>
-                                    <th>Final</th>
                                     <th>Stock</th>
                                 </tr>
                             </thead>
