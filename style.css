@@ -1,5 +1,5 @@
 /* ============================================= */
-/* ESTILOS ORIGINALES DE LA TIENDA         */
+/* ESTILOS ORIGINALES DE LA TIENDA (INTACTOS)    */
 /* ============================================= */
 :root {
     --color-principal: #D32F2F;
@@ -84,49 +84,48 @@ header { background-color: var(--color-blanco); padding: 15px; position: sticky;
 .toast-notification { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 3000; left: 50%; top: 30px; transform: translateX(-50%); font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s, top 0.3s; }
 .toast-notification.show { visibility: visible; opacity: 1; top: 50px; }
 
-/* ======================================================
-   NUEVOS ESTILOS DASHBOARD ADMIN (PREFIJO DASH-)
-   ====================================================== */
-.dash-layout { display: flex; height: 100vh; background-color: #F1F5F9; overflow: hidden; }
+/* =============================================================
+   ESTILOS EXCLUSIVOS PANEL ADMIN (PREFIJO 'PANEL-')
+   (Diseño Dashboard separado de la tienda)
+   ============================================================= */
+.panel-layout { display: flex; height: 100vh; background-color: #F8FAFC; overflow: hidden; }
 
-/* SIDEBAR ADMIN (Diferente al .sidebar de la tienda) */
-.dash-sidebar { width: 250px; background: white; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; }
-.dash-brand h2 { color: var(--color-principal); text-align: center; margin-bottom: 30px; font-size: 1.4rem; }
-.dash-category { font-size: 0.75rem; color: #94A3B8; font-weight: bold; margin: 15px 0 5px 10px; letter-spacing: 0.5px; }
-.dash-item-user { display: flex; align-items: center; gap: 10px; background: #EFF6FF; color: #1E293B; padding: 10px; border-radius: 8px; font-weight: 600; margin-bottom: 10px; }
-.dash-btn { width: 100%; text-align: left; background: transparent; color: #64748B; padding: 12px 15px; border-radius: 8px; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-weight: 500; font-size: 0.95rem; }
-.dash-btn:hover, .dash-btn.active { background-color: var(--color-principal); color: white; }
-.dash-btn.disabled { opacity: 0.5; cursor: not-allowed; }
-.dash-footer { margin-top: auto; }
-.dash-logout-btn { width: 100%; text-align: left; color: #EF4444; background: #FEF2F2; padding: 10px 15px; border-radius: 8px; margin-top: 10px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+/* SIDEBAR ADMIN (NO CONFUNDIR CON .SIDEBAR) */
+.panel-lateral-admin { width: 260px; background: white; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; }
+.panel-logo h2 { color: var(--color-principal); text-align: center; margin-bottom: 30px; font-size: 1.4rem; }
+.panel-label { font-size: 0.7rem; color: #94A3B8; font-weight: bold; margin: 15px 0 5px 10px; letter-spacing: 1px; }
+.panel-btn { width: 100%; text-align: left; background: transparent; color: #64748B; padding: 12px 15px; border-radius: 8px; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-weight: 500; font-size: 0.9rem; cursor: pointer; }
+.panel-btn:hover, .panel-btn.active { background-color: var(--color-principal); color: white; }
+.panel-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+.panel-footer { margin-top: auto; }
+.panel-logout-btn { width: 100%; text-align: left; color: #EF4444; background: #FEF2F2; padding: 10px 15px; border-radius: 8px; margin-top: 10px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
 
 /* CONTENIDO ADMIN */
-.dash-content { flex: 1; padding: 25px; overflow-y: auto; }
-.dash-tab { display: none; animation: fadeIn 0.3s ease; }
-.dash-tab.active-tab { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.panel-content { flex: 1; padding: 30px; overflow-y: auto; }
+.panel-tab { display: none; animation: fadeIn 0.3s ease; }
+.panel-tab.active-tab { display: block; }
 
-.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-.dash-search-edit { display: flex; gap: 8px; }
-.dash-search-edit input { width: 200px; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; }
+.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.panel-search-edit { display: flex; gap: 8px; }
+.panel-search-edit input { width: 200px; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; }
 
 /* FORMULARIO */
-.dash-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.dash-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-.form-group.full-width { grid-column: span 2; }
-.form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 5px; }
-.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.95rem; }
-.dash-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.panel-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.panel-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.p-group.full { grid-column: span 2; }
+.p-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 5px; }
+.p-group input, .p-group select, .p-group textarea { width: 100%; padding: 10px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.95rem; }
+.panel-actions { display: flex; justify-content: flex-end; gap: 10px; }
 
 /* FILTROS Y TABLA */
-.dash-filters { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-.dash-filters select { padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; background: #F8FAFC; min-width: 130px; }
-.dash-export-menu { position: absolute; top: 110%; right: 0; background: white; border: 1px solid #E2E8F0; width: 120px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 50; }
-.dash-export-menu div { padding: 10px; cursor: pointer; font-size: 0.9rem; }
-.dash-export-menu div:hover { background: #F1F5F9; }
+.panel-filters { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.panel-filters select { padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; background: #F8FAFC; min-width: 130px; }
+.panel-export-menu { position: absolute; top: 110%; right: 0; background: white; border: 1px solid #E2E8F0; width: 120px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 50; }
+.panel-export-menu div { padding: 10px; cursor: pointer; font-size: 0.9rem; }
+.panel-export-menu div:hover { background: #F1F5F9; }
 
-.dash-table-wrapper { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
-.dash-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-.dash-table th { text-align: left; padding: 12px 15px; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
-.dash-table td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; color: #334155; font-size: 0.9rem; }
-.dash-edit-btn { background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+.panel-table-wrap { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
+.panel-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+.panel-table th { text-align: left; padding: 12px 15px; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.panel-table td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; color: #334155; font-size: 0.9rem; }
+.panel-edit-btn { background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
