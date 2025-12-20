@@ -1,5 +1,5 @@
 /* ============================================= */
-/* VARIABLES Y ESTILOS ORIGINALES (TIENDA)     */
+/* VARIABLES Y ESTILOS ORIGINALES          */
 /* ============================================= */
 :root {
     --color-principal: #D32F2F;
@@ -18,7 +18,7 @@ body { background-color: var(--color-gris-claro); color: var(--color-negro); }
 .hidden { display: none !important; }
 .view { width: 100%; min-height: 100vh; display: flex; flex-direction: column; } 
 
-/* BOTONES TIENDA */
+/* BOTONES */
 button { cursor: pointer; border: none; padding: 12px 20px; border-radius: 6px; font-weight: bold; font-size: 1rem; transition: 0.2s; }
 .primary-btn { background-color: var(--color-principal); color: var(--color-blanco); width: 100%; margin-top: 10px; }
 .primary-btn:hover { background-color: var(--color-principal-dark); }
@@ -84,44 +84,51 @@ header { background-color: var(--color-blanco); padding: 15px; position: sticky;
 .toast-notification { visibility: hidden; min-width: 250px; background-color: #333; color: #fff; text-align: center; border-radius: 4px; padding: 16px; position: fixed; z-index: 3000; left: 50%; top: 30px; transform: translateX(-50%); font-size: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.3); opacity: 0; transition: opacity 0.3s, top 0.3s; }
 .toast-notification.show { visibility: visible; opacity: 1; top: 50px; }
 
-/* =========================================
-   ESTILOS NUEVO PANEL ADMIN (DASHBOARD)
-   ========================================= */
-.dashboard-container { display: flex; height: 100vh; background-color: #F3F4F6; overflow: hidden; }
-.dashboard-sidebar { width: 260px; background: #FFFFFF; border-right: 1px solid #E5E7EB; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; }
-.sidebar-header h2 { color: var(--color-principal); font-size: 1.5rem; margin-bottom: 30px; text-align: center; }
-.menu-category { font-size: 0.75rem; color: #9CA3AF; margin: 15px 0 5px 10px; font-weight: 700; letter-spacing: 0.5px; }
-.menu-item.active-user { background: #EFF6FF; color: #1E40AF; padding: 10px 15px; border-radius: 8px; display: flex; align-items: center; gap: 10px; font-weight: 600; margin-bottom: 20px; }
-.menu-btn { width: 100%; text-align: left; background: transparent; border: none; padding: 12px 15px; margin-bottom: 5px; border-radius: 8px; color: #4B5563; font-weight: 500; display: flex; align-items: center; gap: 12px; transition: all 0.2s; }
-.menu-btn:hover, .menu-btn.active { background-color: var(--color-principal); color: white; }
-.menu-btn.disabled { opacity: 0.4; cursor: not-allowed; }
-.sidebar-footer { margin-top: auto; }
-.logout-btn { background: #FEF2F2; color: #DC2626; width: 100%; text-align: left; padding: 12px; border-radius: 8px; display: flex; align-items: center; gap: 10px; }
-.dashboard-main { flex: 1; padding: 30px; overflow-y: auto; }
-.admin-tab { display: none; animation: fadeTab 0.3s ease; }
-.admin-tab.active-tab { display: block; }
-@keyframes fadeTab { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-.tab-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-.search-edit-wrapper { display: flex; gap: 8px; }
-.search-edit-wrapper input { padding: 8px 12px; border: 1px solid #D1D5DB; border-radius: 6px; width: 220px; }
-.form-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-.form-group.full { grid-column: span 2; }
-.form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #374151; }
-.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #D1D5DB; border-radius: 6px; }
-.form-actions { display: flex; justify-content: flex-end; gap: 15px; }
-.btn-secondary { background: #E5E7EB; color: #374151; padding: 10px 20px; border-radius: 6px; }
-.btn-primary { background: var(--color-principal); color: white; padding: 10px 20px; border-radius: 6px; }
-.filters-bar { background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-.filters-bar select { padding: 8px; border: 1px solid #D1D5DB; border-radius: 6px; background: #F9FAFB; min-width: 120px; }
-.btn-edit-selection { background: #10B981; color: white; padding: 8px 15px; border-radius: 6px; border: none; font-weight: bold; display: flex; align-items: center; gap: 8px; }
-.export-wrapper { position: relative; margin-left: auto; }
-.btn-export { background: #1F2937; color: white; padding: 8px 15px; border-radius: 6px; display: flex; align-items: center; gap: 8px; }
-.export-menu { position: absolute; top: 110%; right: 0; background: white; border: 1px solid #E5E7EB; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border-radius: 6px; width: 140px; z-index: 50; }
+/* ====================================================
+   ESTILOS NUEVOS PARA EL DASHBOARD (Admin)
+   (Adaptado a tus colores para que no desentone)
+   ==================================================== */
+.dashboard-layout { display: flex; height: 100vh; background-color: #F1F5F9; overflow: hidden; }
+
+/* SIDEBAR */
+.dashboard-sidebar { width: 250px; background: white; border-right: 1px solid #E2E8F0; display: flex; flex-direction: column; padding: 20px; flex-shrink: 0; }
+.sidebar-brand h2 { color: var(--color-principal); text-align: center; margin-bottom: 30px; font-size: 1.4rem; }
+.menu-group-title { font-size: 0.75rem; color: #94A3B8; font-weight: bold; margin: 15px 0 5px 10px; letter-spacing: 0.5px; }
+.menu-item-user { display: flex; align-items: center; gap: 10px; background: #EFF6FF; color: #1E293B; padding: 10px; border-radius: 8px; font-weight: 600; margin-bottom: 10px; }
+.dash-menu-btn { width: 100%; text-align: left; background: transparent; color: #64748B; padding: 12px 15px; border-radius: 8px; margin-bottom: 2px; display: flex; align-items: center; gap: 10px; transition: 0.2s; font-weight: 500; font-size: 0.95rem; }
+.dash-menu-btn:hover, .dash-menu-btn.active { background-color: var(--color-principal); color: white; }
+.dash-menu-btn.disabled { opacity: 0.5; cursor: not-allowed; }
+.sidebar-bottom { margin-top: auto; }
+.dash-logout-btn { width: 100%; text-align: left; color: #EF4444; background: #FEF2F2; padding: 10px 15px; border-radius: 8px; margin-top: 10px; font-weight: 600; display: flex; align-items: center; gap: 10px; }
+
+/* CONTENIDO PRINCIPAL */
+.dashboard-content { flex: 1; padding: 25px; overflow-y: auto; }
+.dash-tab { display: none; animation: fadeInTab 0.3s ease; }
+.dash-tab.active-tab { display: block; }
+@keyframes fadeInTab { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+.dash-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.dash-search-box { display: flex; gap: 8px; }
+.dash-search-box input { width: 200px; padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; }
+
+/* TARJETAS FORMULARIO */
+.dash-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.dash-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.form-group.full-width { grid-column: span 2; }
+.form-group label { display: block; font-size: 0.9rem; font-weight: 600; color: #334155; margin-bottom: 5px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px; border: 1px solid #CBD5E1; border-radius: 6px; font-size: 0.95rem; }
+.dash-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* TABLA Y FILTROS */
+.dash-filters { background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+.dash-filters select { padding: 8px; border: 1px solid #CBD5E1; border-radius: 6px; background: #F8FAFC; min-width: 130px; }
+.export-box { margin-left: auto; position: relative; }
+.export-menu { position: absolute; top: 110%; right: 0; background: white; border: 1px solid #E2E8F0; width: 120px; border-radius: 6px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); z-index: 50; }
 .export-menu div { padding: 10px; cursor: pointer; font-size: 0.9rem; }
-.export-menu div:hover { background: #F3F4F6; }
-.table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
-.admin-table { width: 100%; border-collapse: collapse; min-width: 800px; }
-.admin-table th, .admin-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #F3F4F6; }
-.admin-table th { color: #9CA3AF; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; }
-.admin-table td { color: #1F2937; font-size: 0.95rem; }
+.export-menu div:hover { background: #F1F5F9; }
+
+.dash-table-container { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); overflow-x: auto; }
+.dash-table { width: 100%; border-collapse: collapse; min-width: 800px; }
+.dash-table th { text-align: left; padding: 12px 15px; border-bottom: 1px solid #E2E8F0; color: #64748B; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; }
+.dash-table td { padding: 12px 15px; border-bottom: 1px solid #F1F5F9; color: #334155; font-size: 0.9rem; }
+.edit-selected-btn { background: #10B981; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
