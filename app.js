@@ -70,9 +70,11 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
+                
                 currentCategoryFilter = btn.dataset.cat;
                 currentSearchTerm = ''; 
                 document.getElementById('search-input').value = '';
+                
                 renderStore();
             });
         });
@@ -92,13 +94,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const discount = p.discount_value || 0;
             const finalPrice = discount > 0 ? (p.price * (1 - discount/100)) : p.price;
             
-            // Lógica imagen URL (texto o json)
+            // Imagen: usa el string directo de la BD
             let imgShow = 'https://via.placeholder.com/150';
             if(p.images) {
+                 // Si por alguna razón está como JSON array
                  try {
                      const parsed = JSON.parse(p.images);
                      imgShow = Array.isArray(parsed) ? parsed[0] : p.images;
-                 } catch(e) { imgShow = p.images; }
+                 } catch(e) {
+                     imgShow = p.images; 
+                 }
             }
 
             const div = document.createElement('div');
@@ -187,7 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =============================================
-    //            LÓGICA ADMIN (PANEL NUEVO)
+    //            LÓGICA ADMIN (PANEL ADAPTADO)
     // =============================================
     
     document.getElementById('go-to-admin').onclick = () => { views.store.classList.add('hidden'); views.login.classList.remove('hidden'); closeSidebar(); };
@@ -201,16 +206,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     document.getElementById('admin-logout-btn').onclick = async () => { await sb.auth.signOut(); views.admin.classList.add('hidden'); views.store.classList.remove('hidden'); };
 
-    // CAMBIAR PESTAÑAS
-    window.switchPanelTab = (tabId) => {
-        document.querySelectorAll('.panel-tab').forEach(t => { t.classList.remove('active-tab'); t.classList.add('hidden-tab'); });
-        document.querySelectorAll('.panel-btn').forEach(b => b.classList.remove('active'));
-        document.getElementById(tabId).classList.remove('hidden-tab');
-        document.getElementById(tabId).classList.add('active-tab');
-        
-        if(tabId === 'tab-agregar') document.querySelector("div[onclick=\"switchPanelTab('tab-agregar')\"]").classList.add('active');
+    // TABS
+    window.switchAdminTab = (tabId) => {
+        // Ocultar tabs del admin
+        const tabs = document.querySelectorAll('.admin-tab');
+        tabs.forEach(t => t.classList.add('hidden'));
+        document.getElementById(tabId).classList.remove('hidden');
+
+        // Estilo botones menú
+        const navBtns = document.querySelectorAll('.admin-nav button');
+        navBtns.forEach(b => b.classList.remove('active-nav'));
+        if(tabId === 'tab-agregar') navBtns[0].classList.add('active-nav');
         if(tabId === 'tab-lista') {
-            document.querySelector("div[onclick=\"switchPanelTab('tab-lista')\"]").classList.add('active');
+            navBtns[1].classList.add('active-nav');
             renderAdminTable();
         }
     };
@@ -241,47 +249,35 @@ document.addEventListener('DOMContentLoaded', () => {
         else { const res = await sb.from('products').insert([productData]); error = res.error; }
 
         if (error) alert('Error: ' + error.message);
-        else { alert('Guardado con éxito'); resetAdminForm(); loadProducts(); switchPanelTab('tab-lista'); }
+        else { alert('Guardado con éxito'); resetAdminForm(); loadProducts(); switchAdminTab('tab-lista'); }
     };
 
     window.renderAdminTable = () => {
         const tbody = document.getElementById('admin-table-body');
         tbody.innerHTML = '';
+        
         const catSelect = document.getElementById('f-cat');
         if (catSelect.options.length <= 1) categories.forEach(c => catSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
 
         const fCat = document.getElementById('f-cat').value;
         const fStock = document.getElementById('f-stock').value;
-        const fPrice = document.getElementById('f-price').value;
-        const fOffer = document.getElementById('f-offer').value;
 
         let filtered = products.filter(p => {
             if (fCat !== 'all' && p.category !== fCat) return false;
             const s = p.stock || 0;
-            if (fStock !== 'all') {
-                const [min, max] = fStock.split('-').map(Number);
-                if (max && (s < min || s > max)) return false;
-                if (!max && s < min) return false;
-            }
-            const pr = p.price;
-            if (fPrice !== 'all') {
-                const [min, max] = fPrice.split('-').map(Number);
-                if (max && (pr < min || pr > max)) return false;
-                if (!max && pr < min) return false;
-            }
-            const dVal = p.discount_value || 0;
-            if (fOffer !== 'all') { if (fOffer === 'yes' && dVal === 0) return false; }
+            if (fStock === 'low' && s > 10) return false;
+            if (fStock === 'high' && s < 100) return false;
             return true;
         });
 
         filtered.forEach((p, idx) => {
-            const dVal = p.discount_value || 0;
-            const final = dVal > 0 ? (p.price * (1 - dVal/100)) : p.price;
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><input type="checkbox" class="row-chk" value="${p.id}" onclick="handleCheck(this)"></td>
-                <td>${idx + 1}</td><td><strong>${p.title}</strong></td><td>${p.code || '-'}</td><td>${p.category}</td>
-                <td>Bs ${p.price}</td><td>${dVal > 0 ? dVal+'%' : ''}</td><td>Bs ${final.toFixed(2)}</td><td>${p.stock}</td>`;
+                <td><strong>${p.title}</strong></td>
+                <td>${p.code || '-'}</td>
+                <td>Bs ${p.price}</td>
+                <td>${p.stock}</td>`;
             tbody.appendChild(tr);
         });
     };
@@ -293,13 +289,13 @@ document.addEventListener('DOMContentLoaded', () => {
         else { adminSelectedId = null; btn.classList.add('hidden'); }
     };
 
-    window.editSelectedRow = () => { if(adminSelectedId) { fillAdminForm(products.find(p => p.id == adminSelectedId)); switchPanelTab('tab-agregar'); } };
+    window.editSelectedRow = () => { if(adminSelectedId) { fillAdminForm(products.find(p => p.id == adminSelectedId)); switchAdminTab('tab-agregar'); } };
 
     window.resetAdminForm = () => { 
         document.getElementById('product-form').reset(); 
         document.getElementById('edit-product-id').value = ''; 
         adminSelectedId = null; 
-        document.getElementById('img-preview-box').style.display='none'; 
+        document.getElementById('admin-img-preview').style.display='none'; 
     };
     
     function fillAdminForm(p) {
@@ -314,13 +310,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let imgUrl = p.images;
         try { const parsed = JSON.parse(p.images); imgUrl = Array.isArray(parsed) ? parsed[0] : p.images; } catch(e) {}
         document.getElementById('p-image-url').value = imgUrl || '';
-        if(imgUrl) { document.getElementById('admin-img-preview').src = imgUrl; document.getElementById('img-preview-box').style.display = 'block'; }
+        if(imgUrl) { document.getElementById('admin-img-preview').src = imgUrl; document.getElementById('admin-img-preview').style.display = 'block'; }
     }
 
-    window.toggleExportMenu = () => document.getElementById('export-dropdown').classList.toggle('hidden');
     window.exportData = (type) => {
         const data = products.map(p => ({ ID: p.id, Producto: p.title, Codigo: p.code, Categoria: p.category, Precio: p.price, Stock: p.stock }));
-        if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inv"); XLSX.writeFile(wb, "Sirari.xlsx"); }
-        document.getElementById('export-dropdown').classList.add('hidden');
+        const ws = XLSX.utils.json_to_sheet(data); 
+        const wb = XLSX.utils.book_new(); 
+        XLSX.utils.book_append_sheet(wb, ws, "Inventario"); 
+        XLSX.writeFile(wb, "Sirari_Inventario.xlsx");
     };
 });
