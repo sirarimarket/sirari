@@ -3,515 +3,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirari - Panel de Administración</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <title>Sirari Store</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
-        /* Estilos para ocultar/mostrar secciones */
-        .section-content { display: none; }
-        .section-content.active { display: block; }
-        .sidebar-link.active { background-color: #f3f4f6; color: #4f46e5; border-right: 3px solid #4f46e5; }
-    </style>
 </head>
-<body class="h-screen flex overflow-hidden">
+<body>
 
-    <aside class="w-64 bg-white shadow-md flex flex-col justify-between z-10">
-        <div>
-            <div class="h-16 flex items-center px-8 border-b border-gray-100">
-                <i class="fa-solid fa-infinity text-indigo-600 text-2xl mr-2"></i>
-                <span class="text-xl font-bold text-gray-800">Sirari</span>
-            </div>
+    <section id="login-view" class="view hidden">
+        <div class="login-container">
+            <h1>SIRARI - Admin</h1>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Email (admin@sirari.com)" required>
+                <input type="password" id="password" placeholder="Contraseña" required>
+                <button type="submit">Ingresar</button>
+            </form>
+            <p id="login-error" class="error-msg"></p>
+            <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
+        </div>
+    </section>
 
-            <div class="p-6 border-b border-gray-100">
-                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Usuario</p>
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                        A
-                    </div>
-                    <div>
-                        <p class="text-sm font-bold text-gray-800">Admin</p>
-                        <p class="text-xs text-gray-500">Principal</p>
-                    </div>
+    <section id="admin-view" class="view hidden">
+        <div class="dashboard-container">
+            
+            <aside class="dashboard-sidebar">
+                <div class="sidebar-header">
+                    <h2>SIRARI Admin</h2>
                 </div>
-            </div>
 
-            <nav class="mt-4 flex-1 overflow-y-auto">
-                <p class="px-6 text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Gestión</p>
-                
-                <a href="#" onclick="showSection('agregar')" id="nav-agregar" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-plus w-5"></i>
-                    <span class="font-medium">AGREGAR</span>
-                </a>
+                <div class="sidebar-menu">
+                    <div class="menu-category">USUARIO</div>
+                    <div class="menu-item active-user">
+                        <i class="fa-solid fa-user-shield"></i>
+                        <span>Admin Principal</span>
+                    </div>
 
-                <a href="#" onclick="showSection('productos')" id="nav-productos" class="sidebar-link active flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-box-open w-5"></i>
-                    <span class="font-medium">PRODUCTOS</span>
-                </a>
+                    <div class="menu-category">GESTIÓN</div>
+                    <button class="menu-btn active" onclick="switchAdminTab('tab-agregar')">
+                        <i class="fa-solid fa-circle-plus"></i> AGREGAR / EDITAR
+                    </button>
+                    <button class="menu-btn" onclick="switchAdminTab('tab-productos')">
+                        <i class="fa-solid fa-box-open"></i> PRODUCTOS
+                    </button>
 
-                <a href="#" onclick="showSection('ventas')" id="nav-ventas" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-tag w-5"></i>
-                    <span class="font-medium">VENTAS</span>
-                </a>
-                <a href="#" onclick="showSection('compradores')" id="nav-compradores" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-users w-5"></i>
-                    <span class="font-medium">COMPRADORES</span>
-                </a>
-                <a href="#" onclick="showSection('analisis')" id="nav-analisis" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-chart-line w-5"></i>
-                    <span class="font-medium">ANÁLISIS</span>
-                </a>
-                <a href="#" onclick="showSection('notificaciones')" id="nav-notificaciones" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-regular fa-bell w-5"></i>
-                    <span class="font-medium">NOTIFICACIONES</span>
-                </a>
-                <a href="#" onclick="showSection('configuracion')" id="nav-configuracion" class="sidebar-link flex items-center px-6 py-3 text-gray-600 hover:bg-gray-50 hover:text-indigo-600 transition-colors">
-                    <i class="fa-solid fa-gear w-5"></i>
-                    <span class="font-medium">CONFIGURACIÓN</span>
-                </a>
-            </nav>
-        </div>
-
-        <div class="p-4 border-t border-gray-100">
-            <button class="flex items-center w-full px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors">
-                <i class="fa-solid fa-arrow-right-from-bracket w-5"></i>
-                Cerrar Sesión
-            </button>
-        </div>
-    </aside>
-
-    <main class="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 p-8">
-        
-        <div id="agregar" class="section-content max-w-4xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h2 class="text-2xl font-bold text-gray-800">Agregar / Editar Producto</h2>
-            </div>
-
-            <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200 mb-6">
-                <label class="block text-sm font-medium text-gray-700 mb-2">Buscar producto para editar (Ingrese Código)</label>
-                <div class="flex gap-2">
-                    <input type="text" id="searchToEditCode" placeholder="Ej: PROD-001" class="flex-1 p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                    <button onclick="searchAndLoadProduct()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">Buscar</button>
+                    <div class="menu-category">GENERAL</div>
+                    <button class="menu-btn disabled"><i class="fa-solid fa-chart-line"></i> VENTAS</button>
+                    <button class="menu-btn disabled"><i class="fa-solid fa-users"></i> COMPRADORES</button>
+                    <button class="menu-btn disabled"><i class="fa-solid fa-chart-pie"></i> ANÁLISIS</button>
+                    <button class="menu-btn disabled"><i class="fa-regular fa-bell"></i> NOTIFICACIONES</button>
+                    <button class="menu-btn disabled"><i class="fa-solid fa-gear"></i> CONFIGURACIONES</button>
                 </div>
-            </div>
 
-            <div class="bg-white p-8 rounded-xl shadow-sm border border-gray-200">
-                <form id="productForm" onsubmit="saveProduct(event)">
-                    <input type="hidden" id="editIndex" value="-1"> <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Producto</label>
-                            <input type="text" id="prodName" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Código Único</label>
-                            <input type="text" id="prodCode" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Categoría</label>
-                            <select id="prodCategory" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="Ropa Hombre">Ropa Hombre</option>
-                                <option value="Ropa Mujer">Ropa Mujer</option>
-                                <option value="Niños">Niños</option>
-                                <option value="Accesorios">Accesorios</option>
-                                <option value="Electrónica">Electrónica</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Stock</label>
-                            <input type="number" id="prodStock" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Precio Original ($)</label>
-                            <input type="number" step="0.01" id="prodPrice" required class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Descuento (%)</label>
-                            <select id="prodDiscount" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500">
-                                <option value="0">Sin descuento</option>
-                                <option value="3">3%</option>
-                                <option value="5">5%</option>
-                                <option value="10">10%</option>
-                                <option value="20">20%</option>
-                                <option value="50">50%</option>
-                                <option value="80">80%</option>
-                            </select>
-                        </div>
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-700 mb-1">URLs de Imágenes (Separadas por coma)</label>
-                            <textarea id="prodImages" rows="3" placeholder="http://imagen1.jpg, http://imagen2.jpg" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"></textarea>
-                            <p class="text-xs text-gray-500 mt-1">Estas URLs se guardan en BD pero no se exportan.</p>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 flex justify-end gap-3">
-                        <button type="button" onclick="resetForm()" class="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">Cancelar / Limpiar</button>
-                        <button type="submit" class="px-6 py-2 text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 shadow-md">Guardar Producto</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <div id="productos" class="section-content active">
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 class="text-2xl font-bold text-gray-800">Lista de Productos</h2>
-                
-                <div class="flex gap-2">
-                     <button onclick="editSelectedProduct()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 text-sm font-medium shadow-sm">
-                        <i class="fa-solid fa-pen-to-square mr-2"></i> EDITAR SELECCIONADO
+                <div class="sidebar-footer">
+                    <button id="admin-logout-btn" class="logout-btn">
+                        <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
                     </button>
                 </div>
-            </div>
+            </aside>
 
-            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
-                <div class="flex flex-wrap gap-4 items-end justify-between">
-                    <div class="flex flex-wrap gap-3 flex-1">
-                        <div class="flex flex-col">
-                            <label class="text-xs text-gray-500 mb-1">Categoría</label>
-                            <select id="filterCategory" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
-                                <option value="all">Todas</option>
-                                <option value="Ropa Hombre">Ropa Hombre</option>
-                                <option value="Ropa Mujer">Ropa Mujer</option>
-                                <option value="Niños">Niños</option>
-                                <option value="Accesorios">Accesorios</option>
-                            </select>
-                        </div>
-                         <div class="flex flex-col">
-                            <label class="text-xs text-gray-500 mb-1">Rango Stock</label>
-                            <select id="filterStock" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
-                                <option value="all">Todos</option>
-                                <option value="1-10">1 - 10</option>
-                                <option value="10-50">10 - 50</option>
-                                <option value="100-500">100 - 500</option>
-                                <option value="500-1000">500 - 1000</option>
-                                <option value="1000-2000">1000 - 2000</option>
-                                <option value="2000-10000">2000 - 10000</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-xs text-gray-500 mb-1">Rango Precio</label>
-                            <select id="filterPrice" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
-                                <option value="all">Todos</option>
-                                <option value="1-50">$1 - $50</option>
-                                <option value="51-100">$51 - $100</option>
-                                <option value="100-500">$100 - $500</option>
-                                <option value="500+">$500+</option>
-                            </select>
-                        </div>
-                        <div class="flex flex-col">
-                            <label class="text-xs text-gray-500 mb-1">Descuentos</label>
-                            <select id="filterDiscount" onchange="applyFilters()" class="text-sm p-2 border border-gray-300 rounded-md">
-                                <option value="all">Todos</option>
-                                <option value="offer">En Oferta (Cualquiera)</option>
-                                <option value="3">3%</option>
-                                <option value="5">5%</option>
-                                <option value="10">10%</option>
-                                <option value="20">20%</option>
-                                <option value="50">50%</option>
-                                <option value="80">80%</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button onclick="exportData('xlsx')" class="flex items-center gap-2 bg-green-600 text-white px-3 py-2 rounded-md hover:bg-green-700 text-sm">
-                            <i class="fa-solid fa-file-excel"></i> Excel
-                        </button>
-                        <button onclick="exportData('csv')" class="flex items-center gap-2 bg-yellow-600 text-white px-3 py-2 rounded-md hover:bg-yellow-700 text-sm">
-                            <i class="fa-solid fa-file-csv"></i> CSV
-                        </button>
-                        <button onclick="exportData('sql')" class="flex items-center gap-2 bg-gray-700 text-white px-3 py-2 rounded-md hover:bg-gray-800 text-sm">
-                            <i class="fa-solid fa-database"></i> SQL
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left border-collapse">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th class="p-4 w-10 text-center"><i class="fa-regular fa-check-square text-gray-400"></i></th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">#</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Producto</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Código</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Categoría</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Precio</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Desc %</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Precio Final</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Stock</th>
-                                <th class="p-4 text-xs font-semibold text-gray-500 uppercase">Estado</th>
-                            </tr>
-                        </thead>
-                        <tbody id="productsTableBody" class="divide-y divide-gray-100">
-                            </tbody>
-                    </table>
-                </div>
-                <div class="p-4 border-t border-gray-100 flex justify-between items-center text-sm text-gray-500">
-                    <span id="showingText">Mostrando 0 productos</span>
-                    <div class="flex gap-2">
-                        <button class="px-3 py-1 border rounded hover:bg-gray-50">Anterior</button>
-                        <button class="px-3 py-1 border rounded hover:bg-gray-50">Siguiente</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div id="ventas" class="section-content text-center py-20">
-            <h2 class="text-gray-400 text-2xl font-bold">Sección VENTAS deshabilitada</h2>
-        </div>
-        <div id="compradores" class="section-content text-center py-20">
-            <h2 class="text-gray-400 text-2xl font-bold">Sección COMPRADORES deshabilitada</h2>
-        </div>
-        <div id="analisis" class="section-content text-center py-20">
-            <h2 class="text-gray-400 text-2xl font-bold">Sección ANÁLISIS deshabilitada</h2>
-        </div>
-        <div id="notificaciones" class="section-content text-center py-20">
-            <h2 class="text-gray-400 text-2xl font-bold">Sección NOTIFICACIONES deshabilitada</h2>
-        </div>
-        <div id="configuracion" class="section-content text-center py-20">
-            <h2 class="text-gray-400 text-2xl font-bold">Sección CONFIGURACIÓN deshabilitada</h2>
-        </div>
-
-    </main>
-
-    <script>
-        // --- 1. DATOS INICIALES (Simulación de Base de Datos) ---
-        let products = [
-            { id: 1, name: "T-Shirt Clásica", code: "TS-001", category: "Ropa Hombre", price: 79.80, discount: 0, stock: 79, images: "url1.jpg" },
-            { id: 2, name: "Camisa Formal", code: "SH-002", category: "Ropa Hombre", price: 76.89, discount: 10, stock: 86, images: "url2.jpg" },
-            { id: 3, name: "Pantalón Niño", code: "PA-003", category: "Niños", price: 86.65, discount: 50, stock: 4, images: "url3.jpg" },
-            { id: 4, name: "Sweater Lana", code: "SW-004", category: "Ropa Hombre", price: 56.07, discount: 0, stock: 69, images: "url4.jpg" },
-            { id: 5, name: "Chaqueta Ligera", code: "JA-005", category: "Ropa Mujer", price: 36.00, discount: 5, stock: 65, images: "url5.jpg" }
-        ];
-
-        // --- 2. NAVEGACIÓN ---
-        function showSection(sectionId) {
-            // Ocultar todas las secciones
-            document.querySelectorAll('.section-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.sidebar-link').forEach(el => el.classList.remove('active'));
-
-            // Mostrar la seleccionada
-            document.getElementById(sectionId).classList.add('active');
-            
-            // Activar link del sidebar
-            const navLink = document.getElementById('nav-' + sectionId);
-            if(navLink) navLink.classList.add('active');
-
-            if (sectionId === 'productos') {
-                applyFilters(); // Recargar tabla al entrar
-            }
-        }
-
-        // --- 3. LÓGICA TABLA Y FILTROS ---
-        function calculateFinalPrice(price, discount) {
-            if (!discount || discount == 0) return price;
-            return price - (price * (discount / 100));
-        }
-
-        function applyFilters() {
-            const cat = document.getElementById('filterCategory').value;
-            const stk = document.getElementById('filterStock').value;
-            const prc = document.getElementById('filterPrice').value;
-            const dsc = document.getElementById('filterDiscount').value;
-
-            let filtered = products.filter(p => {
-                // Filtro Categoría
-                if (cat !== 'all' && p.category !== cat) return false;
-
-                // Filtro Stock
-                if (stk !== 'all') {
-                    const [min, max] = stk.split('-').map(Number);
-                    if (stk === '500+') { if (p.stock < 500) return false; } // Ejemplo simple
-                    else if (p.stock < min || p.stock > max) return false;
-                }
-
-                // Filtro Precio
-                if (prc !== 'all') {
-                    if (prc === '500+') { if (p.price < 500) return false; }
-                    else {
-                        const [min, max] = prc.split('-').map(Number);
-                        if (p.price < min || p.price > max) return false;
-                    }
-                }
-
-                // Filtro Descuento
-                if (dsc !== 'all') {
-                    if (dsc === 'offer') { if (p.discount <= 0) return false; }
-                    else if (p.discount != dsc) return false;
-                }
-
-                return true;
-            });
-
-            renderTable(filtered);
-        }
-
-        function renderTable(data) {
-            const tbody = document.getElementById('productsTableBody');
-            tbody.innerHTML = '';
-            
-            data.forEach((p, index) => {
-                const finalPrice = calculateFinalPrice(p.price, p.discount);
-                const discountDisplay = p.discount > 0 ? `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">-${p.discount}%</span>` : '';
-                const finalPriceDisplay = p.discount > 0 ? `$${finalPrice.toFixed(2)}` : '';
+            <main class="dashboard-main">
                 
-                // Lógica de estado (simulada por stock)
-                let statusBadge = '<span class="text-green-600 bg-green-100 px-2 py-1 rounded text-xs">Activo</span>';
-                if(p.stock < 10) statusBadge = '<span class="text-orange-600 bg-orange-100 px-2 py-1 rounded text-xs">Bajo Stock</span>';
+                <div id="tab-agregar" class="admin-tab active-tab">
+                    <div class="tab-header">
+                        <h2>Gestión de Producto</h2>
+                        <div class="search-edit-wrapper">
+                            <input type="text" id="admin-search-code" placeholder="Ingresa Código Único para editar...">
+                            <button class="btn-primary" onclick="searchForEdit()">
+                                <i class="fa-solid fa-magnifying-glass"></i> Buscar y Editar
+                            </button>
+                        </div>
+                    </div>
 
-                const row = `
-                    <tr class="hover:bg-gray-50 transition-colors border-b border-gray-50">
-                        <td class="p-4 text-center">
-                            <input type="checkbox" name="productSelect" value="${p.id}" class="w-4 h-4 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        </td>
-                        <td class="p-4 text-sm text-gray-500">${index + 1}</td>
-                        <td class="p-4 text-sm font-medium text-gray-800 flex items-center gap-3">
-                            <div class="w-8 h-8 bg-gray-200 rounded overflow-hidden flex-shrink-0"></div> 
-                            ${p.name}
-                        </td>
-                        <td class="p-4 text-sm text-gray-500 font-mono">${p.code}</td>
-                        <td class="p-4 text-sm text-gray-500">${p.category}</td>
-                        <td class="p-4 text-sm text-gray-800 font-semibold">$${p.price.toFixed(2)}</td>
-                        <td class="p-4 text-sm">${discountDisplay}</td>
-                        <td class="p-4 text-sm text-indigo-600 font-bold">${finalPriceDisplay}</td>
-                        <td class="p-4 text-sm text-gray-600">${p.stock}</td>
-                        <td class="p-4">${statusBadge}</td>
-                    </tr>
-                `;
-                tbody.innerHTML += row;
-            });
+                    <div class="form-card">
+                        <form id="product-form">
+                            <input type="hidden" id="edit-product-id">
+                            <input type="hidden" id="current-image-url">
+
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Nombre del Producto</label>
+                                    <input type="text" id="p-title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Código (Automático si está vacío)</label>
+                                    <input type="text" id="p-code" placeholder="Ej: SIRARI-X1Y2">
+                                </div>
+                                <div class="form-group">
+                                    <label>Categoría</label>
+                                    <input type="text" id="p-category" list="category-list" required>
+                                    <datalist id="category-list"></datalist>
+                                </div>
+                                <div class="form-group">
+                                    <label>Precio (Bs)</label>
+                                    <input type="number" id="p-price" step="0.01" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Porcentaje Descuento (%)</label>
+                                    <input type="number" id="p-discount" placeholder="0" min="0" max="100">
+                                </div>
+                                <div class="form-group">
+                                    <label>Stock</label>
+                                    <input type="number" id="p-stock" required min="0">
+                                </div>
+                                <div class="form-group full">
+                                    <label>Descripción</label>
+                                    <textarea id="p-description" rows="3"></textarea>
+                                </div>
+                                <div class="form-group full">
+                                    <label>Imagen</label>
+                                    <input type="file" id="p-image-file" accept="image/*">
+                                    <small id="img-status-msg" style="color: green; display:none;">Imagen actual cargada</small>
+                                </div>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" onclick="resetAdminForm()">Limpiar / Cancelar</button>
+                                <button type="submit" class="btn-primary">Guardar Producto</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div id="tab-productos" class="admin-tab hidden-tab">
+                    <div class="tab-header">
+                        <h2>Lista de Inventario</h2>
+                        <div class="header-tools">
+                            <button id="btn-global-edit" class="btn-edit-selection hidden" onclick="editSelectedRow()">
+                                <i class="fa-solid fa-pen-to-square"></i> EDITAR SELECCIONADO
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="filters-bar">
+                        <select id="f-cat" onchange="applyAdminFilters()">
+                            <option value="all">Todas las Categorías</option>
+                        </select>
+                        <select id="f-stock" onchange="applyAdminFilters()">
+                            <option value="all">Todo Stock</option>
+                            <option value="1-10">Stock: 1 - 10</option>
+                            <option value="10-50">Stock: 10 - 50</option>
+                            <option value="100-500">Stock: 100 - 500</option>
+                            <option value="500-1000">Stock: 500 - 1000</option>
+                            <option value="1000-2000">Stock: 1000 - 2000</option>
+                            <option value="2000-10000">Stock: 2000 - 10000</option>
+                        </select>
+                        <select id="f-price" onchange="applyAdminFilters()">
+                            <option value="all">Todo Precio</option>
+                            <option value="1-10">Bs 1 - 10</option>
+                            <option value="10-50">Bs 10 - 50</option>
+                            <option value="100-500">Bs 100 - 500</option>
+                            <option value="500-1000">Bs 500 - 1000</option>
+                            <option value="1000-2000">Bs 1000 - 2000</option>
+                            <option value="2000-10000">Bs 2000 - 10000</option>
+                        </select>
+                        <select id="f-offer" onchange="applyAdminFilters()">
+                            <option value="all">Todas Ofertas</option>
+                            <option value="yes">En Oferta (Cualquiera)</option>
+                            <option value="3">3%</option>
+                            <option value="5">5%</option>
+                            <option value="10">10%</option>
+                            <option value="20">20%</option>
+                            <option value="50">50%</option>
+                            <option value="80">80%</option>
+                        </select>
+                        
+                        <div class="export-wrapper">
+                            <button class="btn-export" onclick="toggleExportMenu()">
+                                Exportar <i class="fa-solid fa-chevron-down"></i>
+                            </button>
+                            <div id="export-dropdown" class="export-menu hidden">
+                                <div onclick="exportData('xlsx')">Excel (.xlsx)</div>
+                                <div onclick="exportData('csv')">CSV (.csv)</div>
+                                <div onclick="exportData('sql')">SQL (.sql)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th width="40">Sel.</th>
+                                    <th width="40">#</th>
+                                    <th>Nombre Producto</th>
+                                    <th>Código</th>
+                                    <th>Categoría</th>
+                                    <th>Precio</th>
+                                    <th>Desc.%</th>
+                                    <th>Precio Final</th>
+                                    <th>Stock</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-table-body">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </section>
+
+    <section id="store-view" class="view hidden">
+        <header>
+            <div class="header-top">
+                <button id="menu-toggle"><i class="fa-solid fa-bars"></i></button>
+                <div class="logo">SIRARI</div>
+                <div class="cart-icon" onclick="toggleCart()">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span id="cart-count">0</span>
+                </div>
+            </div>
             
-            document.getElementById('showingText').innerText = `Mostrando ${data.length} productos`;
-        }
+            <div class="search-bar">
+                <input type="text" id="search-input" placeholder="Buscar productos...">
+                <button id="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </div>
 
-        // --- 4. FUNCIONES DE AGREGAR / EDITAR ---
-        function resetForm() {
-            document.getElementById('productForm').reset();
-            document.getElementById('editIndex').value = "-1";
-            document.getElementById('searchToEditCode').value = "";
-        }
+            <div class="categories-scroll" id="categories-container">
+                <button class="cat-btn active" data-cat="todos">Todos</button>
+                </div>
+        </header>
 
-        function saveProduct(e) {
-            e.preventDefault();
-            const id = document.getElementById('editIndex').value;
-            
-            const newProduct = {
-                id: id == "-1" ? Date.now() : parseInt(id), // ID simple
-                name: document.getElementById('prodName').value,
-                code: document.getElementById('prodCode').value,
-                category: document.getElementById('prodCategory').value,
-                stock: parseInt(document.getElementById('prodStock').value),
-                price: parseFloat(document.getElementById('prodPrice').value),
-                discount: parseInt(document.getElementById('prodDiscount').value),
-                images: document.getElementById('prodImages').value
-            };
+        <div class="products-grid" id="products-container">
+            </div>
 
-            if (id == "-1") {
-                // Agregar nuevo
-                products.push(newProduct);
-                alert("Producto Agregado");
-            } else {
-                // Editar existente
-                const index = products.findIndex(p => p.id == id);
-                if(index !== -1) {
-                    products[index] = newProduct;
-                    alert("Producto Actualizado");
-                }
-            }
-            
-            resetForm();
-            showSection('productos'); // Volver a la lista
-        }
+        <div class="sidebar-overlay" id="sidebar-overlay"></div>
+        <div class="sidebar" id="sidebar">
+            <button id="close-sidebar"><i class="fa-solid fa-xmark"></i></button>
+            <h3>Menú</h3>
+            <div class="sidebar-search">
+                <input type="text" id="sidebar-search-input" placeholder="Buscar...">
+            </div>
+            <ul id="sidebar-categories">
+                </ul>
+            <div class="admin-link">
+                <a href="#" id="go-to-admin">Admin Panel</a>
+            </div>
+        </div>
+    </section>
 
-        function loadProductToForm(product) {
-            document.getElementById('editIndex').value = product.id;
-            document.getElementById('prodName').value = product.name;
-            document.getElementById('prodCode').value = product.code;
-            document.getElementById('prodCategory').value = product.category;
-            document.getElementById('prodStock').value = product.stock;
-            document.getElementById('prodPrice').value = product.price;
-            document.getElementById('prodDiscount').value = product.discount;
-            document.getElementById('prodImages').value = product.images;
-            
-            showSection('agregar'); // Ir a la vista de agregar
-        }
+    <div id="cart-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Tu Carrito</h2>
+                <button onclick="toggleCart()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="cart-items"></div>
+            <div class="cart-total">
+                <h3>Total: Bs. <span id="cart-total-price">0.00</span></h3>
+            </div>
+            <button id="checkout-btn" class="primary-btn">Realizar Pedido</button>
+        </div>
+    </div>
 
-        function searchAndLoadProduct() {
-            const code = document.getElementById('searchToEditCode').value;
-            const product = products.find(p => p.code === code);
-            if(product) {
-                loadProductToForm(product);
-            } else {
-                alert("Producto con ese código no encontrado");
-            }
-        }
+    <div id="checkout-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Datos de Envío</h2>
+                <button onclick="closeCheckout()"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="checkout-form">
+                <input type="text" id="customer-name" placeholder="Nombre completo" required>
+                <div class="location-group">
+                    <textarea id="customer-location" placeholder="Referencia de ubicación" rows="2" required></textarea>
+                </div>
+                
+                <div id="location-question-step">
+                    <p style="text-align:center; margin-bottom:10px;">¿Estás en el lugar de entrega?</p>
+                    <div style="display:flex; gap:10px; justify-content:center;">
+                        <button type="button" id="btn-yes-location" class="secondary-btn">SÍ</button>
+                        <button type="button" id="btn-no-location" class="secondary-btn">NO</button>
+                    </div>
+                </div>
 
-        // --- 5. LÓGICA "EDITAR SELECCIONADO" ---
-        function editSelectedProduct() {
-            // Obtener checkbox marcado
-            const checkboxes = document.querySelectorAll('input[name="productSelect"]:checked');
-            
-            if (checkboxes.length === 0) {
-                alert("Por favor selecciona un producto de la lista primero.");
-                return;
-            }
-            if (checkboxes.length > 1) {
-                alert("Por favor selecciona solo un producto para editar.");
-                return;
-            }
+                <div id="map-container-wrapper" class="hidden">
+                    <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación:</p>
+                    <div id="delivery-map"></div>
+                    <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="width:100%; margin-top:10px;">Confirmar ubicación</button>
+                </div>
 
-            const id = checkboxes[0].value;
-            const product = products.find(p => p.id == id);
-            if(product) loadProductToForm(product);
-        }
+                <p id="location-status" class="location-status-msg"></p>
 
-        // --- 6. EXPORTAR (Excel, SQL, CSV) ---
-        function getExportData() {
-            // Retorna productos sin el campo imagenes (Req 3 final)
-            return products.map(({ images, ...rest }) => rest);
-        }
+                <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
+            </form>
+        </div>
+    </div>
 
-        function exportData(type) {
-            const dataToExport = getExportData();
+    <div id="toast" class="toast-notification">Producto agregado</div>
 
-            if (type === 'xlsx') {
-                const ws = XLSX.utils.json_to_sheet(dataToExport);
-                const wb = XLSX.utils.book_new();
-                XLSX.utils.book_append_sheet(wb, ws, "Productos");
-                XLSX.writeFile(wb, "Sirari_Productos.xlsx");
-            } 
-            else if (type === 'csv') {
-                const ws = XLSX.utils.json_to_sheet(dataToExport);
-                const csv = XLSX.utils.sheet_to_csv(ws);
-                downloadFile(csv, 'Sirari_Productos.csv', 'text/csv');
-            }
-            else if (type === 'sql') {
-                let sql = "INSERT INTO productos (id, name, code, category, price, discount, stock) VALUES \n";
-                const values = dataToExport.map(p => 
-                    `(${p.id}, '${p.name}', '${p.code}', '${p.category}', ${p.price}, ${p.discount}, ${p.stock})`
-                ).join(",\n");
-                sql += values + ";";
-                downloadFile(sql, 'Sirari_Productos.sql', 'text/plain');
-            }
-        }
-
-        function downloadFile(content, fileName, mimeType) {
-            const a = document.createElement('a');
-            const blob = new Blob([content], {type: mimeType});
-            a.href = URL.createObjectURL(blob);
-            a.download = fileName;
-            a.click();
-        }
-
-        // Inicializar
-        document.addEventListener('DOMContentLoaded', () => {
-            applyFilters();
-        });
-
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js"></script>
 </body>
 </html>
