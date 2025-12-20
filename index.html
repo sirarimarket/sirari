@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirari</title>
+    <title>Sirari Store</title>
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -28,24 +28,14 @@
         <div class="dashboard-container">
             
             <aside class="dashboard-sidebar">
-                <div class="sidebar-header">
-                    <h2>SIRARI Admin</h2>
-                </div>
-
+                <div class="sidebar-header"><h2>SIRARI Admin</h2></div>
                 <div class="sidebar-menu">
                     <div class="menu-category">USUARIO</div>
-                    <div class="menu-item active-user">
-                        <i class="fa-solid fa-user-shield"></i>
-                        <span>Administrador</span>
-                    </div>
-
+                    <div class="menu-item active-user"><i class="fa-solid fa-user-shield"></i><span>Admin Principal</span></div>
+                    
                     <div class="menu-category">GESTIÓN</div>
-                    <button class="menu-btn active" onclick="switchAdminTab('tab-agregar')">
-                        <i class="fa-solid fa-circle-plus"></i> AGREGAR / EDITAR
-                    </button>
-                    <button class="menu-btn" onclick="switchAdminTab('tab-productos')">
-                        <i class="fa-solid fa-box-open"></i> PRODUCTOS
-                    </button>
+                    <button class="menu-btn active" onclick="switchAdminTab('tab-agregar')"><i class="fa-solid fa-circle-plus"></i> AGREGAR / EDITAR</button>
+                    <button class="menu-btn" onclick="switchAdminTab('tab-productos')"><i class="fa-solid fa-box-open"></i> PRODUCTOS</button>
 
                     <div class="menu-category">GENERAL</div>
                     <button class="menu-btn disabled"><i class="fa-solid fa-chart-line"></i> VENTAS</button>
@@ -54,11 +44,8 @@
                     <button class="menu-btn disabled"><i class="fa-regular fa-bell"></i> NOTIFICACIONES</button>
                     <button class="menu-btn disabled"><i class="fa-solid fa-gear"></i> CONFIGURACIONES</button>
                 </div>
-
                 <div class="sidebar-footer">
-                    <button id="admin-logout-btn" class="logout-btn">
-                        <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
-                    </button>
+                    <button id="admin-logout-btn" class="logout-btn"><i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión</button>
                 </div>
             </aside>
 
@@ -69,17 +56,14 @@
                         <h2>Gestión de Producto</h2>
                         <div class="search-edit-wrapper">
                             <input type="text" id="admin-search-code" placeholder="Código Único (ej: SIRARI-123)">
-                            <button class="btn-primary" onclick="searchForEdit()">
-                                <i class="fa-solid fa-magnifying-glass"></i> Buscar y Editar
-                            </button>
+                            <button class="btn-primary" onclick="searchForEdit()"><i class="fa-solid fa-magnifying-glass"></i> Buscar y Editar</button>
                         </div>
                     </div>
 
                     <div class="form-card">
                         <form id="product-form">
                             <input type="hidden" id="edit-product-id">
-                            <input type="hidden" id="current-image-url">
-
+                            
                             <div class="form-grid">
                                 <div class="form-group">
                                     <label>Nombre del Producto</label>
@@ -111,14 +95,14 @@
                                     <textarea id="p-description" rows="3"></textarea>
                                 </div>
                                 <div class="form-group full">
-                                    <label>Imagen</label>
-                                    <input type="file" id="p-image-file" accept="image/*">
-                                    <small id="img-status-msg" style="color: green; display:none;">Imagen actual cargada</small>
+                                    <label>URL de la Imagen</label>
+                                    <input type="text" id="p-image-url" placeholder="Pegar enlace de la imagen aquí (https://...)">
+                                    <img id="admin-img-preview" src="" style="max-height: 100px; display: none; margin-top: 10px; border-radius: 5px;">
                                 </div>
                             </div>
                             
                             <div class="form-actions">
-                                <button type="button" class="btn-secondary" onclick="resetAdminForm()">Limpiar / Cancelar</button>
+                                <button type="button" class="btn-secondary" onclick="resetAdminForm()">Limpiar</button>
                                 <button type="submit" class="btn-primary">Guardar Producto</button>
                             </div>
                         </form>
@@ -136,9 +120,7 @@
                     </div>
 
                     <div class="filters-bar">
-                        <select id="f-cat" onchange="applyAdminFilters()">
-                            <option value="all">Todas las Categorías</option>
-                        </select>
+                        <select id="f-cat" onchange="applyAdminFilters()"><option value="all">Todas las Categorías</option></select>
                         <select id="f-stock" onchange="applyAdminFilters()">
                             <option value="all">Todo Stock</option>
                             <option value="1-10">Stock: 1 - 10</option>
@@ -169,9 +151,7 @@
                         </select>
                         
                         <div class="export-wrapper">
-                            <button class="btn-export" onclick="toggleExportMenu()">
-                                Exportar <i class="fa-solid fa-chevron-down"></i>
-                            </button>
+                            <button class="btn-export" onclick="toggleExportMenu()">Exportar <i class="fa-solid fa-chevron-down"></i></button>
                             <div id="export-dropdown" class="export-menu hidden">
                                 <div onclick="exportData('xlsx')">Excel (.xlsx)</div>
                                 <div onclick="exportData('csv')">CSV (.csv)</div>
@@ -195,8 +175,7 @@
                                     <th>Stock</th>
                                 </tr>
                             </thead>
-                            <tbody id="admin-table-body">
-                                </tbody>
+                            <tbody id="admin-table-body"></tbody>
                         </table>
                     </div>
                 </div>
@@ -235,8 +214,7 @@
             <div class="sidebar-search">
                 <input type="text" id="sidebar-search-input" placeholder="Buscar...">
             </div>
-            <ul id="sidebar-categories">
-                </ul>
+            <ul id="sidebar-categories"></ul>
             <div class="admin-link">
                 <a href="#" id="go-to-admin">Admin Panel</a>
             </div>
