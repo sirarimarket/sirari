@@ -13,7 +13,7 @@ let categories = [];
 let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
 let currentCategoryFilter = 'todos';
 let currentSearchTerm = '';
-let adminSelectedId = null;
+let adminSelectedId = null; // Para el panel de admin
 
 document.addEventListener('DOMContentLoaded', () => {
     
@@ -24,10 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
         store: document.getElementById('store-view')
     };
 
-    // MOSTRAR TIENDA AL INICIAR
+    // **IMPORTANTE**: Mostrar tienda al inicio
     views.store.classList.remove('hidden'); 
 
-    // CARGAR DATOS
+    // CARGAR DATOS INICIALES
     loadProducts();
     updateCartUI();
 
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (prodData) {
             products = prodData;
             renderStore();
-            // Si estamos en admin, actualizar tabla
+            // Actualizar tabla admin si está visible
             if (!views.admin.classList.contains('hidden')) renderAdminTable();
         }
     }
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         sidebarList.innerHTML = sidebarHtml;
 
-        // EVENTO: Reseteo de búsqueda al cambiar categoría
+        // Eventos Header
         document.querySelectorAll('.cat-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
@@ -98,15 +98,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const discount = p.discount_value || 0;
             const finalPrice = discount > 0 ? (p.price * (1 - discount/100)) : p.price;
             
-            // Lógica simple para imagen (usa la primera si es array, o el string directo)
+            // Manejo de imagen URL (texto)
             let imgShow = 'https://via.placeholder.com/150';
             if(p.images) {
-                 // Si es JSON string tipo ["url"] o solo url
                  try {
                      const parsed = JSON.parse(p.images);
                      imgShow = Array.isArray(parsed) ? parsed[0] : p.images;
                  } catch(e) {
-                     imgShow = p.images; // Es un texto plano
+                     imgShow = p.images; 
                  }
             }
 
@@ -267,13 +266,13 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // =============================================
-    //            LÓGICA ADMIN
+    //            LÓGICA ADMIN (NUEVA Y ADAPTADA)
     // =============================================
     
     document.getElementById('go-to-admin').onclick = () => {
         views.store.classList.add('hidden');
         views.login.classList.remove('hidden');
-        closeSidebar();
+        closeSidebar(); // Cerrar menú hamburguesa si está abierto
     };
 
     document.getElementById('login-form').onsubmit = async (e) => {
@@ -297,12 +296,13 @@ document.addEventListener('DOMContentLoaded', () => {
         views.store.classList.remove('hidden');
     };
 
-    // TABS
+    // -- NAVEGACIÓN DASHBOARD --
     window.switchAdminTab = (tabId) => {
-        document.querySelectorAll('.admin-tab').forEach(t => { t.classList.remove('active-tab'); t.classList.add('hidden-tab'); });
-        document.querySelectorAll('.menu-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.dash-tab').forEach(t => { t.classList.remove('active-tab'); t.classList.add('hidden-tab'); });
+        document.querySelectorAll('.dash-menu-btn').forEach(b => b.classList.remove('active'));
         document.getElementById(tabId).classList.remove('hidden-tab');
         document.getElementById(tabId).classList.add('active-tab');
+        
         if(tabId === 'tab-agregar') document.querySelector("button[onclick=\"switchAdminTab('tab-agregar')\"]").classList.add('active');
         if(tabId === 'tab-productos') {
             document.querySelector("button[onclick=\"switchAdminTab('tab-productos')\"]").classList.add('active');
@@ -310,6 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // -- BUSCAR POR CÓDIGO --
     window.searchForEdit = () => {
         const code = document.getElementById('admin-search-code').value.trim();
         const prod = products.find(p => p.code === code);
@@ -317,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
         else { alert("Código no encontrado."); }
     };
 
-    // GUARDAR PRODUCTO (AHORA CON URL STRING)
+    // -- GUARDAR PRODUCTO (INSERT/UPDATE) --
     document.getElementById('product-form').onsubmit = async (e) => {
         e.preventDefault();
         const id = document.getElementById('edit-product-id').value;
@@ -329,19 +330,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const discountVal = parseInt(document.getElementById('p-discount').value) || 0;
         const code = document.getElementById('p-code').value || 'SIRARI-' + Math.random().toString(36).substr(2, 5).toUpperCase();
         
-        // Capturar URL de texto
+        // URL de Imagen (Texto)
         const imageUrl = document.getElementById('p-image-url').value;
 
-        // Nota: Guardamos en 'images' porque así está en tu CSV.
+        // Estructura según tus columnas CSV: "images"
         const productData = { 
-            title, 
-            category, 
-            price, 
-            stock, 
-            description: desc, 
-            code, 
+            title, category, price, stock, description: desc, code, 
             discount_value: discountVal, 
-            images: imageUrl // Guardamos el link directo
+            images: imageUrl 
         };
         
         let error;
@@ -349,12 +345,16 @@ document.addEventListener('DOMContentLoaded', () => {
         else { const res = await sb.from('products').insert([productData]); error = res.error; }
 
         if (error) alert('Error: ' + error.message);
-        else { alert('Guardado'); resetAdminForm(); loadProducts(); switchAdminTab('tab-productos'); }
+        else { alert('Guardado con éxito'); resetAdminForm(); loadProducts(); switchAdminTab('tab-productos'); }
     };
+
+    // -- RENDERIZAR TABLA CON FILTROS --
+    window.applyAdminFilters = () => { renderAdminTable(); };
 
     window.renderAdminTable = () => {
         const tbody = document.getElementById('admin-table-body');
         tbody.innerHTML = '';
+        
         const catSelect = document.getElementById('f-cat');
         if (catSelect.options.length <= 1) categories.forEach(c => catSelect.innerHTML += `<option value="${c.name}">${c.name}</option>`);
 
@@ -365,20 +365,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let filtered = products.filter(p => {
             if (fCat !== 'all' && p.category !== fCat) return false;
+            
             const s = p.stock || 0;
             if (fStock !== 'all') {
                 const [min, max] = fStock.split('-').map(Number);
                 if (max && (s < min || s > max)) return false;
+                if (!max && s < min) return false; // caso 1000+
             }
+            
             const pr = p.price;
             if (fPrice !== 'all') {
                 const [min, max] = fPrice.split('-').map(Number);
                 if (max && (pr < min || pr > max)) return false;
+                if (!max && pr < min) return false; // caso 500+
             }
+            
             const dVal = p.discount_value || 0;
             if (fOffer !== 'all') {
                 if (fOffer === 'yes' && dVal === 0) return false;
-                if (fOffer !== 'yes' && dVal != fOffer) return false;
+                if (fOffer === 'no' && dVal > 0) return false;
             }
             return true;
         });
@@ -389,20 +394,34 @@ document.addEventListener('DOMContentLoaded', () => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><input type="checkbox" class="row-chk" value="${p.id}" onclick="handleCheck(this)"></td>
-                <td>${idx + 1}</td><td><strong>${p.title}</strong></td><td>${p.code || '-'}</td><td>${p.category}</td>
-                <td>Bs ${p.price}</td><td>${dVal > 0 ? dVal+'%' : ''}</td><td>Bs ${final.toFixed(2)}</td><td>${p.stock}</td>`;
+                <td>${idx + 1}</td>
+                <td><strong>${p.title}</strong></td>
+                <td>${p.code || '-'}</td>
+                <td>${p.category}</td>
+                <td>Bs ${p.price}</td>
+                <td>${dVal > 0 ? dVal+'%' : ''}</td>
+                <td>Bs ${final.toFixed(2)}</td>
+                <td>${p.stock}</td>`;
             tbody.appendChild(tr);
         });
     };
 
+    // -- CHECKBOX Y EDICIÓN --
     window.handleCheck = (chk) => {
         document.querySelectorAll('.row-chk').forEach(c => { if(c!==chk) c.checked = false; });
         const btn = document.getElementById('btn-global-edit');
         if (chk.checked) { adminSelectedId = chk.value; btn.classList.remove('hidden'); } 
         else { adminSelectedId = null; btn.classList.add('hidden'); }
     };
+
     window.editSelectedRow = () => { if(adminSelectedId) { fillAdminForm(products.find(p => p.id == adminSelectedId)); switchAdminTab('tab-agregar'); } };
-    window.resetAdminForm = () => { document.getElementById('product-form').reset(); document.getElementById('edit-product-id').value = ''; adminSelectedId = null; document.getElementById('admin-img-preview').style.display='none'; };
+
+    window.resetAdminForm = () => { 
+        document.getElementById('product-form').reset(); 
+        document.getElementById('edit-product-id').value = ''; 
+        adminSelectedId = null; 
+        document.getElementById('img-preview-container').style.display='none'; 
+    };
     
     function fillAdminForm(p) {
         document.getElementById('edit-product-id').value = p.id;
@@ -414,9 +433,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('p-discount').value = p.discount_value || 0;
         document.getElementById('p-description').value = p.description || '';
         
-        // Cargar URL imagen
         let imgUrl = p.images;
-        // Si viene como array JSON string
         try { 
             const parsed = JSON.parse(p.images);
             imgUrl = Array.isArray(parsed) ? parsed[0] : p.images;
@@ -424,16 +441,16 @@ document.addEventListener('DOMContentLoaded', () => {
         
         document.getElementById('p-image-url').value = imgUrl || '';
         if(imgUrl) {
-            const preview = document.getElementById('admin-img-preview');
-            preview.src = imgUrl;
-            preview.style.display = 'block';
+            document.getElementById('admin-img-preview').src = imgUrl;
+            document.getElementById('img-preview-container').style.display = 'block';
         }
     }
 
+    // -- EXPORTAR (Punto Final) --
     window.toggleExportMenu = () => document.getElementById('export-dropdown').classList.toggle('hidden');
     window.exportData = (type) => {
         const data = products.map(p => ({ ID: p.id, Producto: p.title, Codigo: p.code, Categoria: p.category, Precio: p.price, Stock: p.stock }));
-        if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inv"); XLSX.writeFile(wb, "Sirari.xlsx"); }
+        if (type === 'xlsx') { const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Inventario"); XLSX.writeFile(wb, "Sirari_Inventario.xlsx"); }
         document.getElementById('export-dropdown').classList.add('hidden');
     };
 });
