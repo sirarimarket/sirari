@@ -11,127 +11,58 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- VARIABLES DE ESTADO ---
     let products = [];
-    let categories = []; // Array de objetos {id, name}
+    let categories = []; 
     let cart = JSON.parse(localStorage.getItem('sirari_cart')) || [];
     let currentCategoryFilter = 'todos';
     let currentPage = 1;
     const itemsPerPage = 100;
-    
-    // Variables Checkout
     let map = null, marker = null, selectedCoordinates = null;
 
-    // --- SELECTORES GLOBALES ---
+    // --- SELECTORES ---
     const views = { 
         login: document.getElementById('login-view'), 
         admin: document.getElementById('admin-view'), 
         store: document.getElementById('store-view') 
     };
-    
-    // Selectores del menú móvil (Tu diseño original)
+
     const searchInputDesk = document.getElementById('search-input');
-    // Si no existe el mobile input (a veces está oculto), usamos el desk como fallback
-    const searchInputMob = document.getElementById('mobile-search-input') || document.getElementById('search-input'); 
-    
-    const mobileMenuBtn = document.getElementById('mobile-menu-btn'); // Botón hamburguesa
-    const mobileSidebar = document.getElementById('mobile-sidebar');
-    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
-    const sidebarOverlay = document.getElementById('sidebar-overlay');
-    const mobileCatsToggle = document.getElementById('mobile-cats-toggle');
-    const mobileCatsContent = document.getElementById('mobile-cats-content');
-    
-    // Selectores Panel Admin (NUEVOS)
-    const productForm = document.getElementById('product-form'); // El nuevo form
-    
-    // --- TOAST NOTIFICATION ---
-    if (!document.getElementById('toast')) {
-        const d = document.createElement('div'); d.id='toast'; d.className='toast-notification'; document.body.appendChild(d);
-    }
-    window.showToast = (msg) => {
-        const t = document.getElementById('toast'); 
-        t.textContent = msg; 
-        t.classList.add('show');
-        setTimeout(()=>t.classList.remove('show'), 3000);
+    const searchInputMob = document.getElementById('mobile-search-input');
+
+    // --- FUNCIONES DE NAVEGACIÓN VISUAL ---
+    window.showView = (name) => {
+        Object.values(views).forEach(v => v.classList.add('hidden'));
+        if(views[name]) views[name].classList.remove('hidden');
+        window.scrollTo(0,0);
     };
 
-    // --- UTILIDADES DE PRECIO ---
-    function formatPriceHTML(val) { 
-        const ps = parseFloat(val).toLocaleString('es-ES', {minimumFractionDigits:2, maximumFractionDigits:2}).split(','); 
-        return ps.length===2 ? `${ps[0]}<span class="decimal-small">,${ps[1]}</span>` : ps[0]; 
-    }
-    
-    // Unificamos la lógica de cálculo
+    // TOAST
+    window.showToast = (msg) => {
+        const t = document.getElementById('toast');
+        if(!t) {
+            const d = document.createElement('div'); d.id='toast'; d.className='toast-notification'; 
+            document.body.appendChild(d);
+            setTimeout(()=> { d.textContent = msg; d.classList.add('show'); }, 10);
+            setTimeout(()=> d.classList.remove('show'), 3000);
+        } else {
+            t.textContent = msg; t.classList.add('show');
+            setTimeout(()=>t.classList.remove('show'), 3000);
+        }
+    };
+
+    // --- CALCULADORA DE PRECIOS ---
     function calculateFinalPrice(price, type, val) { 
         let f = parseFloat(price); 
-        // Adaptación: tu BD usa 'percent'/'fixed' y un valor numérico
         if(type==='percent' && val>0) f = price - (price*(val/100)); 
         else if(type==='fixed' && val>0) f = price - val; 
-        
-        return { 
-            original: parseFloat(price), 
-            final: Math.max(0, f), 
-            hasDiscount: f < price 
-        }; 
+        return { original: parseFloat(price), final: Math.max(0, f), hasDiscount: f < price }; 
+    }
+    
+    function formatPrice(val) {
+        return parseFloat(val).toFixed(2);
     }
 
-    // =============================================
-    //            NAVEGACIÓN Y LOGIN
-    // =============================================
-
-    window.showView = (name) => { 
-        Object.values(views).forEach(v => v && v.classList.add('hidden')); 
-        if(views[name]) views[name].classList.remove('hidden'); 
-    };
-    
-    // Lógica Sidebar Móvil (Tu código original)
-    const toggleSidebar = (show) => {
-        if(!mobileSidebar) return; // Protección si no existe en HTML actual
-        if(show) { mobileSidebar.classList.add('open'); sidebarOverlay?.classList.add('show'); }
-        else { mobileSidebar.classList.remove('open'); sidebarOverlay?.classList.remove('show'); }
-    };
-    if(mobileMenuBtn) mobileMenuBtn.onclick = () => toggleSidebar(true);
-    if(closeSidebarBtn) closeSidebarBtn.onclick = () => toggleSidebar(false);
-    if(sidebarOverlay) sidebarOverlay.onclick = () => toggleSidebar(false);
-    if(mobileCatsToggle) mobileCatsToggle.onclick = () => mobileCatsContent.classList.toggle('show');
-
-    // Botones de navegación
-    const btnAdminLogin = document.getElementById('admin-login-btn');
-    if(btnAdminLogin) btnAdminLogin.onclick = () => showView('login');
-
-    const btnGoStore = document.getElementById('go-to-store-btn');
-    if(btnGoStore) btnGoStore.onclick = () => showView('store');
-    
-    // Logout (Soporta ambos botones, el viejo y el nuevo)
-    const handleLogout = async () => { await sb.auth.signOut(); showView('login'); };
-    const btnLogoutNew = document.getElementById('logout-btn');
-    const btnLogoutOld = document.getElementById('admin-logout-btn');
-    if(btnLogoutNew) btnLogoutNew.onclick = handleLogout;
-    if(btnLogoutOld) btnLogoutOld.onclick = handleLogout;
-
-    // LOGIN SUBMIT
-    const loginForm = document.getElementById('login-form');
-    if(loginForm) {
-        loginForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const email = document.getElementById('username').value;
-            const pass = document.getElementById('password').value;
-            const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-            
-            if(error) document.getElementById('login-error').textContent = 'Credenciales incorrectas';
-            else { 
-                showView('admin'); 
-                loadDataFromServer(); 
-                // IMPORTANTE: Iniciar en la pestaña de usuario del nuevo admin
-                switchAdminTab('user');
-            }
-        };
-    }
-
-    // =============================================
-    //          CARGA DE DATOS (SERVER)
-    // =============================================
-    
+    // --- CARGA DE DATOS ---
     async function loadDataFromServer() {
-        // Obtenemos sesión, categorías y productos
         const [sess, cats, prods] = await Promise.all([
             sb.auth.getSession(), 
             sb.from('categories').select('*'), 
@@ -141,310 +72,388 @@ document.addEventListener('DOMContentLoaded', () => {
         categories = cats.data || []; 
         products = prods.data || [];
         
-        // Renderizamos la tienda pública
+        // Renderizar elementos de la tienda
         renderCategoryFilters(); 
         renderMobileCategories(); 
         renderProducts();
         
-        // Si hay sesión, renderizamos el panel de admin
+        // Lógica de sesión
         if (sess.data.session) { 
             showView('admin'); 
-            // Iniciar componentes del nuevo admin
+            // Iniciar Admin
+            switchAdminTab('user');
             renderAdminProductTable(); 
-            populateCategoryFilterAdmin();
+            populateCategorySelect();
         } else { 
             showView('store'); 
         }
     }
 
     // =============================================
-    //          LÓGICA TIENDA (PÚBLICA)
+    //           LÓGICA TIENDA PÚBLICA
     // =============================================
 
-    // Búsqueda
-    const handleSearch = (e) => {
-        const val = e.target.value;
-        if(searchInputDesk) searchInputDesk.value = val;
-        if(searchInputMob) searchInputMob.value = val;
-        currentPage = 1; 
-        renderProducts();
-        if (e.key === 'Enter') toggleSidebar(false);
-    };
-    if(searchInputDesk) searchInputDesk.addEventListener('input', handleSearch);
-    if(searchInputMob) searchInputMob.addEventListener('keyup', handleSearch); 
+    // Botón "Sobre Nosotros" (Escritorio)
+    const aboutBtn = document.getElementById('about-us-btn');
+    if(aboutBtn) {
+        aboutBtn.onclick = () => {
+            const footer = document.getElementById('footer-section');
+            if(footer) footer.scrollIntoView({ behavior: 'smooth' });
+        };
+    }
 
-    // Renderizar Productos (Grid)
+    // Sidebar Móvil
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const mobileSidebar = document.getElementById('mobile-sidebar');
+    const closeSidebarBtn = document.getElementById('close-sidebar-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    const toggleSidebar = (show) => {
+        if(show) { mobileSidebar.classList.add('open'); sidebarOverlay.classList.add('show'); }
+        else { mobileSidebar.classList.remove('open'); sidebarOverlay.classList.remove('show'); }
+    };
+    if(mobileMenuBtn) mobileMenuBtn.onclick = () => toggleSidebar(true);
+    if(closeSidebarBtn) closeSidebarBtn.onclick = () => toggleSidebar(false);
+    if(sidebarOverlay) sidebarOverlay.onclick = () => toggleSidebar(false);
+    
+    document.getElementById('mobile-cats-toggle').onclick = () => {
+        document.getElementById('mobile-cats-content').classList.toggle('show');
+    };
+    
+    document.getElementById('mobile-about-link').onclick = (e) => {
+        e.preventDefault();
+        toggleSidebar(false);
+        document.getElementById('footer-section').scrollIntoView({ behavior: 'smooth' });
+    };
+
+    document.getElementById('mobile-admin-link').onclick = () => {
+        toggleSidebar(false);
+        showView('login');
+    };
+
+    // Filtros Categoría (Tienda)
+    function renderCategoryFilters() {
+        const container = document.getElementById('category-filters');
+        container.innerHTML = '';
+        
+        const createBtn = (label, value) => {
+            const btn = document.createElement('button');
+            btn.className = `category-filter-btn ${currentCategoryFilter === value ? 'active' : ''}`;
+            btn.textContent = label;
+            btn.onclick = () => {
+                currentCategoryFilter = value;
+                currentPage = 1;
+                if(searchInputDesk) searchInputDesk.value = '';
+                if(searchInputMob) searchInputMob.value = '';
+                renderCategoryFilters();
+                renderMobileCategories();
+                renderProducts();
+            };
+            container.appendChild(btn);
+        };
+
+        createBtn('Ver Todos', 'todos');
+        createBtn('🔥 Ofertas', 'ofertas');
+        categories.forEach(c => createBtn(c.name, c.name));
+    }
+    
+    function renderMobileCategories() {
+        const container = document.getElementById('mobile-cats-content');
+        container.innerHTML = '';
+        const createLink = (label, value) => {
+            const btn = document.createElement('button');
+            btn.className = 'sidebar-link';
+            btn.innerHTML = currentCategoryFilter === value ? `<b>${label}</b>` : label;
+            btn.onclick = () => {
+                currentCategoryFilter = value;
+                currentPage = 1;
+                if(searchInputDesk) searchInputDesk.value = '';
+                if(searchInputMob) searchInputMob.value = '';
+                renderCategoryFilters(); // Actualizar botones arriba también
+                renderMobileCategories();
+                renderProducts();
+                toggleSidebar(false);
+            };
+            container.appendChild(btn);
+        };
+        createLink('Ver Todos', 'todos');
+        createLink('🔥 Ofertas', 'ofertas');
+        categories.forEach(c => createLink(c.name, c.name));
+    }
+
+    // Renderizar Grid Productos
     function renderProducts() {
         const grid = document.getElementById('product-grid');
-        if(!grid) return;
         grid.innerHTML = '';
         
-        const term = searchInputDesk ? searchInputDesk.value.toLowerCase().trim() : '';
-        
+        // Obtener término de búsqueda (del input visible)
+        const term = (searchInputDesk.value || searchInputMob.value).toLowerCase().trim();
+
         let filtered = products.filter(p => {
-            // Filtro Categoría
-            if (currentCategoryFilter === 'ofertas') { if (!(p.discount_type && p.discount_value > 0)) return false; }
-            else if (currentCategoryFilter !== 'todos' && p.category !== currentCategoryFilter) return false;
+            // 1. Filtro Categoría
+            if (currentCategoryFilter === 'ofertas') {
+                if (!(p.discount_type && p.discount_value > 0)) return false;
+            } else if (currentCategoryFilter !== 'todos' && p.category !== currentCategoryFilter) {
+                return false;
+            }
             
-            // Filtro Texto
-            if (term && !p.title.toLowerCase().includes(term) && !p.code.toLowerCase().includes(term)) return false;
+            // 2. Filtro Buscador
+            if (term && !p.title.toLowerCase().includes(term) && !p.code.toLowerCase().includes(term)) {
+                return false;
+            }
             return true;
         });
 
         // Paginación
         const totalPages = Math.ceil(filtered.length / itemsPerPage);
-        if (currentPage > totalPages) currentPage = totalPages || 1;
+        if (currentPage > totalPages) currentPage = 1;
         const productsToShow = filtered.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-        if (productsToShow.length === 0) {
-            grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center;">No se encontraron productos.</p>';
-            renderPagination(0);
+        if(productsToShow.length === 0) {
+            grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; padding:20px;">No se encontraron productos.</p>';
+            document.getElementById('pagination-controls').innerHTML = '';
             return;
         }
 
         productsToShow.forEach(p => {
             const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-            const card = document.createElement('div'); card.className = 'product-card';
+            const card = document.createElement('div');
+            card.className = 'product-card';
             
-            // Generar HTML del precio
-            const priceHtml = pricing.hasDiscount 
-                ? `<span class="p-price-old">Bs.${p.price.toFixed(2)}</span> <span class="p-price">Bs.${formatPriceHTML(pricing.final)}</span>`
-                : `<span class="p-price">Bs.${formatPriceHTML(p.price)}</span>`;
+            const imgUrl = (p.images && p.images.length > 0) ? p.images[0] : '';
+            
+            // HTML del precio
+            let priceHTML = '';
+            if(pricing.hasDiscount) {
+                priceHTML = `<span class="original-price">Bs.${formatPrice(p.price)}</span> <span class="final-price discounted">Bs.${formatPrice(pricing.final)}</span>`;
+            } else {
+                priceHTML = `<span class="final-price">Bs.${formatPrice(p.price)}</span>`;
+            }
 
-            const imgUrl = (p.images && p.images.length > 0) ? p.images[0] : 'https://via.placeholder.com/300?text=Sin+Imagen';
+            const stockHtml = p.stock < 10 
+                ? `<div class="stock-display low-stock">¡Solo ${p.stock} disponibles!</div>` 
+                : `<div class="stock-display">${p.stock} Disponibles</div>`;
 
             card.innerHTML = `
-                <div class="product-img-box" onclick="showProductDetail('${p.id}')">
-                    <img src="${imgUrl}" loading="lazy">
-                    ${pricing.hasDiscount ? `<span class="discount-badge">-${p.discount_type==='percent'?p.discount_value+'%':p.discount_value+'Bs'}</span>` : ''}
+                <div class="product-image-container">
+                    <img src="${imgUrl}" alt="${p.title}">
+                    ${pricing.hasDiscount ? `<div class="discount-badge">-${p.discount_type==='percent'?p.discount_value+'%':p.discount_value+'Bs'}</div>` : ''}
                 </div>
                 <div class="product-info">
-                    <span class="p-category">${p.category}</span>
-                    <h3 class="p-title">${p.title}</h3>
-                    <div class="p-prices">${priceHtml}</div>
-                    <button class="add-btn" onclick="addToCart('${p.id}', 1)">Agregar</button>
+                    <div>
+                        <div class="p-category">${p.category}</div>
+                        <h3 class="product-title">${p.title}</h3>
+                        <div class="p-prices">${priceHTML}</div>
+                        ${stockHtml}
+                    </div>
+                    <button class="add-btn" onclick="addToCart('${p.id}', 1); event.stopPropagation();">Añadir al Carrito</button>
                 </div>
             `;
+            // Clic en toda la tarjeta abre detalle
+            card.onclick = (e) => {
+                if(!e.target.classList.contains('add-btn')) showProductDetail(p.id);
+            };
             grid.appendChild(card);
         });
+
         renderPagination(totalPages);
     }
 
     function renderPagination(totalPages) {
-        const container = document.getElementById('pagination-controls'); 
-        if(!container) return;
+        const container = document.getElementById('pagination-controls');
         container.innerHTML = '';
-        if (totalPages <= 1) return;
-        
-        // Botones simples Anterior/Siguiente
-        const createBtn = (text, page) => {
+        if(totalPages <= 1) return;
+
+        for(let i=1; i<=totalPages; i++) {
             const btn = document.createElement('button');
-            btn.className = `page-btn ${currentPage === page ? 'active' : ''}`;
-            btn.textContent = text;
-            btn.onclick = () => { currentPage = page; renderProducts(); window.scrollTo({top:0, behavior:'smooth'}); };
+            btn.className = `page-btn ${currentPage === i ? 'active' : ''}`;
+            btn.textContent = i;
+            btn.onclick = () => { currentPage = i; renderProducts(); window.scrollTo(0,0); };
             container.appendChild(btn);
-        };
-
-        if(currentPage > 1) createBtn('←', currentPage - 1);
-        // Mostrar solo algunas páginas para no saturar
-        for (let i = 1; i <= totalPages; i++) {
-             createBtn(i, i);
         }
-        if(currentPage < totalPages) createBtn('→', currentPage + 1);
     }
 
-    // Filtros de Categoría (Tienda)
-    function renderCategoryFilters() {
-        const c = document.getElementById('category-filters');
-        if(!c) return;
-        c.innerHTML = '';
-        
-        const add = (t,v) => { 
-            const div = document.createElement('div'); 
-            div.className = `category-pill ${currentCategoryFilter===v?'active':''}`; 
-            div.textContent=t; 
-            div.onclick=()=>{ 
-                if(searchInputDesk) searchInputDesk.value = ''; 
-                currentCategoryFilter=v; currentPage=1; 
-                renderCategoryFilters(); renderMobileCategories(); renderProducts(); 
-            }; 
-            c.appendChild(div); 
-        };
-        add('Todos','todos'); 
-        add('🔥 Ofertas','ofertas'); 
-        categories.forEach(x=>add(x.name,x.name));
-    }
-    
-    function renderMobileCategories() {
-        if(!mobileCatsContent) return;
-        mobileCatsContent.innerHTML = '';
-        const add = (t,v) => { 
-            const b = document.createElement('button'); 
-            b.className='sidebar-link'; b.style.textAlign='left'; 
-            b.innerHTML=(currentCategoryFilter===v?`<b>${t}</b>`:t); 
-            b.onclick=()=>{ 
-                if(searchInputDesk) searchInputDesk.value = ''; 
-                currentCategoryFilter=v; currentPage=1; 
-                renderCategoryFilters(); renderMobileCategories(); renderProducts(); 
-                toggleSidebar(false);
-            }; 
-            mobileCatsContent.appendChild(b); 
-        };
-        add('Ver Todos','todos'); 
-        add('🔥 Ofertas','ofertas'); 
-        categories.forEach(x=>add(x.name,x.name));
-    }
-
-    // Modal Detalle Producto
-    window.showProductDetail = (id) => {
-        const p = products.find(x => x.id == id); if(!p) return;
-        const modal = document.getElementById('product-detail-modal');
-        const info = document.getElementById('modal-product-info');
-        if(!modal || !info) return;
-
-        const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-        let imagesHtml = '';
-        if(p.images) p.images.forEach(img => imagesHtml += `<img src="${img}" style="width:60px; height:60px; object-fit:cover; margin:5px; border-radius:4px; border:1px solid #ddd;">`);
-
-        info.innerHTML = `
-            <h2>${p.title}</h2>
-            <p style="color:#666;">Ref: ${p.code}</p>
-            <div style="margin:15px 0;">
-                <img src="${(p.images && p.images[0]) || ''}" style="width:100%; max-height:300px; object-fit:contain; border-radius:8px;">
-                <div style="display:flex; overflow-x:auto; margin-top:10px;">${imagesHtml}</div>
-            </div>
-            <p>${p.description || 'Sin descripción'}</p>
-            <h3 style="margin-top:20px;">Precio: Bs. ${pricing.final.toFixed(2)}</h3>
-            <button class="primary-btn" onclick="addToCart('${p.id}', 1); document.querySelector('.close-modal').click();" style="width:100%; margin-top:10px;">Agregar al Carrito</button>
-        `;
-        
-        modal.classList.remove('hidden');
-        const closeBtn = modal.querySelector('.close-modal');
-        if(closeBtn) closeBtn.onclick = () => modal.classList.add('hidden');
+    // Buscador
+    const onSearch = (e) => {
+        const val = e.target.value;
+        if(searchInputDesk) searchInputDesk.value = val;
+        if(searchInputMob) searchInputMob.value = val;
+        currentPage = 1;
+        renderProducts();
     };
+    if(searchInputDesk) searchInputDesk.addEventListener('input', onSearch);
+    if(searchInputMob) searchInputMob.addEventListener('input', onSearch);
 
     // =============================================
-    //           CARRITO Y CHECKOUT
+    //         CARRITO Y DETALLE PRODUCTO
     // =============================================
 
-    window.addToCart = (id, q) => { 
-        q = parseInt(q)||1; 
-        const p = products.find(x=>x.id==id); 
-        if(!p || p.stock<1) return showToast("Agotado"); 
+    window.addToCart = (id, q) => {
+        q = parseInt(q) || 1;
+        const p = products.find(x => x.id == id);
+        if(!p || p.stock < 1) return showToast('Producto agotado');
         
-        const existing = cart.find(i=>i.id==id); 
+        const existing = cart.find(i => i.id == id);
         if(existing) {
+            if(existing.quantity + q > p.stock) return showToast('Stock insuficiente');
             existing.quantity += q;
         } else {
-            // Guardamos precio FINAL en el carrito
+            if(q > p.stock) return showToast('Stock insuficiente');
             const pr = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-            cart.push({id:p.id, title:p.title, price:pr.final, quantity:q, stock:p.stock});
-        } 
-        saveCart(); 
-        showToast("Agregado al carrito"); 
+            cart.push({ id: p.id, title: p.title, price: pr.final, quantity: q, stock: p.stock, image: (p.images && p.images[0]) || '' });
+        }
+        saveCart();
+        showToast('Producto agregado');
     };
 
     function saveCart() {
-        localStorage.setItem('sirari_cart', JSON.stringify(cart)); 
+        localStorage.setItem('sirari_cart', JSON.stringify(cart));
         const count = document.getElementById('cart-count');
         if(count) count.textContent = cart.reduce((a,b)=>a+b.quantity,0);
     }
-    // Inicializar contador
     saveCart();
 
-    window.openCheckoutModal = () => {
-        const modal = document.getElementById('checkout-modal');
-        const container = document.getElementById('cart-items-container');
-        const totalEl = document.getElementById('cart-total-price');
+    // Modal Detalle
+    window.showProductDetail = (id) => {
+        const p = products.find(x => x.id == id);
+        if(!p) return;
+        const modal = document.getElementById('product-detail-modal');
+        const content = document.getElementById('product-detail-content');
         
-        container.innerHTML = '';
+        const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
+        
+        let thumbnails = '';
+        if(p.images && p.images.length > 0) {
+            p.images.forEach((img, idx) => {
+                thumbnails += `<img src="${img}" class="gallery-thumbnail ${idx===0?'active':''}" onclick="document.getElementById('gallery-main-image').src='${img}'; document.querySelectorAll('.gallery-thumbnail').forEach(t=>t.classList.remove('active')); this.classList.add('active');">`;
+            });
+        }
+
+        content.innerHTML = `
+            <div id="product-detail-gallery">
+                <img src="${(p.images && p.images[0]) || ''}" id="gallery-main-image">
+                <div id="gallery-thumbnails">${thumbnails}</div>
+            </div>
+            <div id="product-detail-info">
+                <button class="close-modal" onclick="document.getElementById('product-detail-modal').classList.add('hidden')" style="position:absolute; top:0; right:0;">×</button>
+                <h2>${p.title}</h2>
+                <p style="color:#666; font-size:0.9rem;">Cód: ${p.code}</p>
+                <div style="margin: 15px 0;">
+                    ${pricing.hasDiscount ? 
+                        `<span class="original-price">Bs. ${formatPrice(p.price)}</span><br><span class="final-price discounted">Bs. ${formatPrice(pricing.final)}</span>` 
+                        : `<span class="final-price">Bs. ${formatPrice(p.price)}</span>`}
+                </div>
+                <p style="margin-bottom:10px;"><b>Stock:</b> ${p.stock > 0 ? p.stock : '<span style="color:red">Agotado</span>'}</p>
+                <p style="white-space: pre-wrap; font-size: 0.95rem; line-height:1.5;">${p.description || 'Sin descripción.'}</p>
+                
+                <div class="detail-actions">
+                    <button class="primary-btn" onclick="addToCart('${p.id}', 1); document.getElementById('product-detail-modal').classList.add('hidden')" style="width:100%;">Añadir al Carrito</button>
+                </div>
+            </div>
+        `;
+        modal.classList.remove('hidden');
+    };
+
+    // Modal Carrito
+    document.getElementById('cart-btn').onclick = () => {
+        const modal = document.getElementById('cart-modal');
+        const list = document.getElementById('cart-items');
+        list.innerHTML = '';
         let total = 0;
 
-        cart.forEach((item, idx) => {
-            total += item.price * item.quantity;
-            const div = document.createElement('div');
-            div.className = 'cart-item';
-            div.innerHTML = `
-                <div class="cart-item-info">
-                    <h4>${item.title}</h4>
-                    <p>Bs. ${item.price.toFixed(2)} x ${item.quantity}</p>
-                </div>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <div class="qty-selector">
-                        <button class="cart-qty-btn" onclick="updateCartQty(${idx}, -1)">-</button>
-                        <span class="cart-qty-value">${item.quantity}</span>
-                        <button class="cart-qty-btn" onclick="updateCartQty(${idx}, 1)">+</button>
+        if(cart.length === 0) {
+            list.innerHTML = '<p style="text-align:center;">El carrito está vacío.</p>';
+        } else {
+            cart.forEach((i, idx) => {
+                total += i.price * i.quantity;
+                list.innerHTML += `
+                    <div class="cart-item">
+                        <img src="${i.image}" class="cart-item-img">
+                        <div class="cart-item-info">
+                            <div class="cart-item-title">${i.title}</div>
+                            <div class="cart-item-price">Bs.${formatPrice(i.price)}</div>
+                        </div>
+                        <div class="cart-qty-selector">
+                            <button class="cart-qty-btn" onclick="updateCartQty(${idx}, -1)">-</button>
+                            <div class="cart-qty-value">${i.quantity}</div>
+                            <button class="cart-qty-btn" onclick="updateCartQty(${idx}, 1)">+</button>
+                        </div>
+                        <button class="cart-remove-btn" onclick="removeFromCart(${idx})"><i class="fas fa-trash"></i></button>
                     </div>
-                    <button class="cart-remove-btn" onclick="removeFromCart(${idx})">×</button>
-                </div>
-            `;
-            container.appendChild(div);
-        });
-
-        totalEl.textContent = `Bs. ${total.toFixed(2)}`;
-        document.getElementById('checkout-form-container').classList.add('hidden');
-        const btnCheckout = document.getElementById('checkout-btn');
-        if(btnCheckout) {
-            btnCheckout.classList.remove('hidden');
-            btnCheckout.onclick = () => {
-                if(cart.length === 0) return showToast("Carrito vacío");
-                btnCheckout.classList.add('hidden');
-                document.getElementById('checkout-form-container').classList.remove('hidden');
-            };
+                `;
+            });
         }
+        
+        document.getElementById('cart-total').textContent = formatPrice(total);
+        const checkoutBtn = document.getElementById('checkout-btn');
+        checkoutBtn.disabled = cart.length === 0;
+        
+        checkoutBtn.onclick = () => {
+            modal.classList.add('hidden');
+            document.getElementById('checkout-modal').classList.remove('hidden');
+        };
+
         modal.classList.remove('hidden');
     };
 
     window.updateCartQty = (idx, delta) => {
         cart[idx].quantity += delta;
         if(cart[idx].quantity < 1) cart[idx].quantity = 1;
-        saveCart(); openCheckoutModal();
+        if(cart[idx].quantity > cart[idx].stock) {
+            cart[idx].quantity = cart[idx].stock;
+            showToast('Máximo stock alcanzado');
+        }
+        saveCart(); document.getElementById('cart-btn').click(); // Refrescar modal
     };
-
+    
     window.removeFromCart = (idx) => {
         cart.splice(idx, 1);
-        saveCart(); openCheckoutModal();
+        saveCart(); document.getElementById('cart-btn').click();
     };
+
+    // Checkout Modal
+    document.getElementById('close-cart-modal').onclick = () => document.getElementById('cart-modal').classList.add('hidden');
+    document.getElementById('close-checkout-modal').onclick = () => document.getElementById('checkout-modal').classList.add('hidden');
 
     // MAPA
     function initMap() {
-        if(map) map.remove(); 
-        const lat = -17.7833, lng = -63.1821; 
-        map = L.map('delivery-map').setView([lat,lng], 13); 
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map); 
-        marker = L.marker([lat,lng], {draggable:true}).addTo(map); 
+        if(map) map.remove();
+        const lat = -17.7833, lng = -63.1821;
+        map = L.map('delivery-map').setView([lat, lng], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+        marker = L.marker([lat, lng], {draggable:true}).addTo(map);
         
-        const updateCoords = (e) => selectedCoordinates = e.latlng;
-        marker.on('dragend', (e) => updateCoords(e)); 
-        map.on('click', (e) => { marker.setLatLng(e.latlng); updateCoords(e); }); 
-        selectedCoordinates = {lat, lng}; 
-        setTimeout(() => map.invalidateSize(), 200);
+        marker.on('dragend', (e) => selectedCoordinates = e.target.getLatLng());
+        map.on('click', (e) => {
+            marker.setLatLng(e.latlng);
+            selectedCoordinates = e.latlng;
+        });
+        selectedCoordinates = {lat, lng};
+        setTimeout(()=> map.invalidateSize(), 300);
     }
 
-    const btnYesLoc = document.getElementById('btn-yes-location');
-    if(btnYesLoc) btnYesLoc.onclick = async () => {
+    document.getElementById('btn-yes-location').onclick = () => {
         document.getElementById('location-question-step').classList.add('hidden');
-        document.getElementById('location-status').textContent = "Buscando GPS...";
-        try {
-            const pos = await new Promise((res, rej) => navigator.geolocation.getCurrentPosition(res, rej, {timeout:10000}));
-            selectedCoordinates = {lat: pos.coords.latitude, lng: pos.coords.longitude};
-            document.getElementById('location-status').textContent = "✅ GPS OK";
+        document.getElementById('location-status').textContent = 'Obteniendo GPS...';
+        navigator.geolocation.getCurrentPosition((pos) => {
+            selectedCoordinates = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            document.getElementById('location-status').textContent = '✅ GPS Obtenido';
             document.getElementById('checkout-submit-btn').classList.remove('hidden');
-        } catch(e) {
+        }, () => {
+            alert('No se pudo obtener GPS, usa el mapa.');
             document.getElementById('btn-no-location').click();
-        }
+        });
     };
 
-    const btnNoLoc = document.getElementById('btn-no-location');
-    if(btnNoLoc) btnNoLoc.onclick = () => {
+    document.getElementById('btn-no-location').onclick = () => {
         document.getElementById('location-question-step').classList.add('hidden');
         document.getElementById('map-container-wrapper').classList.remove('hidden');
         initMap();
     };
-    
+
     document.getElementById('confirm-map-location').onclick = () => {
         document.getElementById('map-container-wrapper').classList.add('hidden');
-        document.getElementById('location-status').textContent = "✅ Mapa OK";
+        document.getElementById('location-status').textContent = '✅ Ubicación Mapa Confirmada';
         document.getElementById('checkout-submit-btn').classList.remove('hidden');
     };
 
@@ -452,26 +461,50 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const name = document.getElementById('customer-name').value;
         const ref = document.getElementById('customer-location').value;
-        const locLink = selectedCoordinates ? `http://maps.google.com/?q=${selectedCoordinates.lat},${selectedCoordinates.lng}` : 'No map';
+        const locLink = selectedCoordinates ? `https://www.google.com/maps?q=${selectedCoordinates.lat},${selectedCoordinates.lng}` : 'Sin ubicación';
         
-        let msg = `*PEDIDO SIRARI* 🛍️\n*Cliente:* ${name}\n*Ref:* ${ref}\n*Ubicación:* ${locLink}\n\n*ITEMS:*`;
+        let msg = `*NUEVO PEDIDO SIRARI* 🛍️\n\n*Cliente:* ${name}\n*Ref:* ${ref}\n*Ubicación:* ${locLink}\n\n*PRODUCTOS:*`;
         let total = 0;
         cart.forEach(i => {
             total += i.price * i.quantity;
-            msg += `\n- ${i.title} (${i.quantity}) = Bs.${(i.price*i.quantity).toFixed(2)}`;
+            msg += `\n- ${i.title} (${i.quantity}) = Bs.${formatPrice(i.price * i.quantity)}`;
         });
-        msg += `\n\n*TOTAL: Bs. ${total.toFixed(2)}*`;
-        
+        msg += `\n\n*TOTAL: Bs. ${formatPrice(total)}*`;
+
         window.open(`https://api.whatsapp.com/send?phone=59173164833&text=${encodeURIComponent(msg)}`, '_blank');
         cart = []; saveCart(); 
-        document.getElementById('checkout-modal').classList.add('hidden');
         window.location.reload();
     };
 
-    // =============================================
-    //      NUEVA LÓGICA DEL PANEL ADMIN (V2)
-    // =============================================
 
+    // =============================================
+    //           LÓGICA ADMIN (NUEVA)
+    // =============================================
+    
+    // Login
+    document.getElementById('admin-login-btn').onclick = () => showView('login');
+    document.getElementById('go-to-store-btn').onclick = () => showView('store');
+    
+    document.getElementById('login-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const email = document.getElementById('username').value;
+        const pass = document.getElementById('password').value;
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if(error) {
+            document.getElementById('login-error').textContent = 'Credenciales Incorrectas';
+        } else {
+            showView('admin');
+            switchAdminTab('user');
+            loadDataFromServer();
+        }
+    };
+    
+    document.getElementById('logout-btn').onclick = async () => {
+        await sb.auth.signOut();
+        showView('store');
+    };
+
+    // Navegación Tabs Admin
     window.switchAdminTab = (tabName) => {
         ['user', 'add', 'list', 'placeholder'].forEach(t => {
              const el = document.getElementById(`tab-${t}`);
@@ -479,151 +512,101 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         if(['sales', 'buyers', 'analytics', 'notifications', 'settings'].includes(tabName)){
-            const ph = document.getElementById('tab-placeholder');
-            if(ph) ph.classList.remove('hidden');
+            document.getElementById('tab-placeholder').classList.remove('hidden');
         } else {
-            const el = document.getElementById(`tab-${tabName}`);
-            if(el) el.classList.remove('hidden');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
         }
 
         document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
         if(event && event.currentTarget) event.currentTarget.classList.add('active');
 
         if(tabName === 'list') {
-            populateCategoryFilterAdmin();
             renderAdminProductTable();
+            populateCategoryFilterAdmin();
         }
         if(tabName === 'add') {
              populateCategorySelect();
         }
     };
 
-    // --- CRUD PRODUCTOS (ADMIN NUEVO) ---
-    
-    // Guardar (Submit)
-    if(productForm) {
-        productForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            
-            // Recoger valores del NUEVO formulario (IDs con prefijo p-)
-            const id = document.getElementById('product-id').value;
-            const title = document.getElementById('p-title').value;
-            const code = document.getElementById('p-code').value;
-            const category = document.getElementById('p-category').value;
-            const price = parseFloat(document.getElementById('p-price').value);
-            const stock = parseInt(document.getElementById('p-stock').value);
-            const discount = parseFloat(document.getElementById('p-discount').value) || 0;
-            const discountType = document.getElementById('p-discount-type').value; // 'percent' o 'fixed'
-            const desc = document.getElementById('p-desc').value;
+    // Guardar Producto
+    document.getElementById('product-form').onsubmit = async (e) => {
+        e.preventDefault();
+        const id = document.getElementById('product-id').value;
+        const title = document.getElementById('p-title').value;
+        const code = document.getElementById('p-code').value;
+        const category = document.getElementById('p-category').value;
+        const price = parseFloat(document.getElementById('p-price').value);
+        const stock = parseInt(document.getElementById('p-stock').value);
+        const discount = parseFloat(document.getElementById('p-discount').value) || 0;
+        const discountType = document.getElementById('p-discount-type').value;
+        const desc = document.getElementById('p-desc').value;
+        
+        const images = [];
+        document.querySelectorAll('.image-input').forEach(i => { if(i.value) images.push(i.value); });
 
-            // Recoger imágenes
-            const images = [];
-            document.querySelectorAll('.image-input').forEach(input => {
-                if(input.value.trim()) images.push(input.value.trim());
-            });
+        const data = { title, code, category, price, stock, description: desc, images, discount_type: discountType, discount_value: discount };
+        
+        let error;
+        if(id) {
+            const res = await sb.from('products').update(data).eq('id', id);
+            error = res.error;
+        } else {
+            const res = await sb.from('products').insert([data]);
+            error = res.error;
+        }
 
-            // Preparar objeto para Supabase (Usando columnas de tu BD original)
-            const productData = {
-                title, 
-                code, 
-                category, 
-                price, 
-                stock, 
-                description: desc, 
-                images,
-                // Mapeamos a las columnas que usabas antes
-                discount_type: discountType, 
-                discount_value: discount 
-            };
-
-            let error = null;
-            if(id) {
-                // Update
-                const res = await sb.from('products').update(productData).eq('id', id);
-                error = res.error;
-            } else {
-                // Insert
-                const res = await sb.from('products').insert([productData]);
-                error = res.error;
-            }
-
-            if(error) showToast("Error: " + error.message);
-            else {
-                showToast("Producto Guardado");
-                clearForm();
-                loadDataFromServer(); // Recargar tablas
-            }
-        });
-    }
+        if(error) showToast("Error: " + error.message);
+        else { showToast("Guardado con éxito"); clearForm(); loadDataFromServer(); }
+    };
 
     // Buscar para editar
     window.searchProductToEdit = () => {
         const code = document.getElementById('search-code-edit').value.trim();
-        if(!code) return showToast("Escribe un código");
-        const product = products.find(p => p.code === code);
-        if(product) {
-            loadProductForEdit(product);
-            showToast(`Cargado: ${product.title}`);
-        } else {
-            showToast('No encontrado');
-        }
+        const p = products.find(x => x.code === code);
+        if(p) { loadProductForEdit(p); showToast("Producto cargado"); }
+        else showToast("No encontrado");
     };
 
-    // Cargar datos al form
     function loadProductForEdit(p) {
         document.getElementById('product-id').value = p.id;
         document.getElementById('p-title').value = p.title;
         document.getElementById('p-code').value = p.code;
-        populateCategorySelect(); 
+        populateCategorySelect();
         document.getElementById('p-category').value = p.category;
         document.getElementById('p-price').value = p.price;
         document.getElementById('p-stock').value = p.stock;
-        
-        // Mapeo inverso de BD a Form
         document.getElementById('p-discount').value = p.discount_value || '';
         document.getElementById('p-discount-type').value = p.discount_type || 'percent';
-        
         document.getElementById('p-desc').value = p.description || '';
         
-        // Imágenes
         const container = document.getElementById('image-url-container');
         container.innerHTML = '';
-        if(p.images && p.images.length > 0) {
-            p.images.forEach(url => addImageInput(url));
-        } else {
-             addImageInput();
-        }
+        if(p.images) p.images.forEach(url => addImageInput(url));
+        if(!p.images || p.images.length===0) addImageInput();
     }
-    
-    // Auxiliar imágenes
+
     window.addImageInput = (val = '') => {
-        const container = document.getElementById('image-url-container');
-        const input = document.createElement('input');
-        input.type = 'url';
-        input.className = 'image-input';
-        input.placeholder = "https://...";
-        input.value = val;
-        container.appendChild(input);
+        const d = document.createElement('div');
+        d.innerHTML = `<input type="url" class="image-input" value="${val}" placeholder="URL imagen" style="width:90%; margin-bottom:5px;">`;
+        document.getElementById('image-url-container').appendChild(d);
     };
 
-    // Limpiar form
     window.clearForm = () => {
         document.getElementById('product-form').reset();
-        document.getElementById('product-id').value = ''; 
+        document.getElementById('product-id').value = '';
         document.getElementById('image-url-container').innerHTML = '';
         addImageInput();
     };
 
-    // Renderizar Tabla Admin
     window.renderAdminProductTable = () => {
         const tbody = document.getElementById('admin-product-table-body');
-        if(!tbody) return; // Si no estamos en la pestaña correcta
+        if(!tbody) return;
         tbody.innerHTML = '';
-
-        // Filtros (Admin)
-        const catFilter = document.getElementById('filter-category')?.value || 'all';
-        const stockFilter = document.getElementById('filter-stock')?.value || 'all';
         
+        const catFilter = document.getElementById('filter-category').value;
+        const stockFilter = document.getElementById('filter-stock').value;
+
         let filtered = products.filter(p => {
             if(catFilter !== 'all' && p.category !== catFilter) return false;
             if(stockFilter !== 'all') {
@@ -635,102 +618,53 @@ document.addEventListener('DOMContentLoaded', () => {
 
         filtered.forEach((p, index) => {
             const pricing = calculateFinalPrice(p.price, p.discount_type, p.discount_value);
-            const discountTxt = pricing.hasDiscount ? (p.discount_type === 'percent' ? `${p.discount_value}%` : `Bs.${p.discount_value}`) : '-';
-            
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><input type="radio" name="prod-select" value="${p.id}"></td>
-                <td>${index + 1}</td>
-                <td>${p.title}</td>
-                <td><strong>${p.code}</strong></td>
-                <td>${p.category}</td>
-                <td>Bs. ${p.price}</td>
-                <td style="color:red">${discountTxt}</td>
-                <td><strong>Bs. ${pricing.final.toFixed(2)}</strong></td>
-                <td>${p.stock}</td>
+            tbody.innerHTML += `
+                <tr>
+                    <td><input type="radio" name="prod-select" value="${p.id}"></td>
+                    <td>${index+1}</td>
+                    <td>${p.title}</td>
+                    <td>${p.code}</td>
+                    <td>${p.category}</td>
+                    <td>${p.price}</td>
+                    <td>${p.discount_value ? p.discount_value : '-'}</td>
+                    <td>${formatPrice(pricing.final)}</td>
+                    <td>${p.stock}</td>
+                </tr>
             `;
-            tbody.appendChild(tr);
         });
     };
     
     window.editSelectedProduct = () => {
-        const selected = document.querySelector('input[name="prod-select"]:checked');
-        if(!selected) return showToast('Selecciona un producto');
-        const product = products.find(p => p.id == selected.value);
-        if(product) {
-            switchAdminTab('add'); 
-            loadProductForEdit(product);
-        }
+        const sel = document.querySelector('input[name="prod-select"]:checked');
+        if(sel) {
+            const p = products.find(x => x.id == sel.value);
+            switchAdminTab('add');
+            loadProductForEdit(p);
+        } else showToast("Selecciona un producto");
     };
-    
-    // Llenar Selects
+
+    // Funciones auxiliares Admin
     function populateCategorySelect() {
         const sel = document.getElementById('p-category');
         if(!sel) return;
         sel.innerHTML = '';
-        categories.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.name; // Usamos .name porque categories son objetos
-            opt.textContent = c.name;
-            sel.appendChild(opt);
-        });
-        
-        // Agregar opción para nueva categoría (simple)
-        const optNew = document.createElement('option');
-        optNew.value = "nueva";
-        optNew.textContent = "+ Nueva Categoría...";
-        sel.appendChild(optNew);
-        
-        sel.onchange = () => {
-            if(sel.value === 'nueva') window.addNewCategory();
+        categories.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
+        sel.innerHTML += `<option value="new">+ Nueva...</option>`;
+        sel.onchange = async () => {
+            if(sel.value === 'new') {
+                const n = prompt("Nombre categoría:");
+                if(n) { await sb.from('categories').insert([{name: n.toLowerCase()}]); loadDataFromServer(); }
+            }
         };
     }
-    
-    window.addNewCategory = async () => {
-        const name = prompt("Nombre nueva categoría:");
-        if(name) {
-            const { error } = await sb.from('categories').insert([{name: name.toLowerCase()}]);
-            if(!error) {
-                showToast("Categoría creada");
-                loadDataFromServer();
-            }
-        }
-    };
 
     function populateCategoryFilterAdmin() {
         const sel = document.getElementById('filter-category');
         if(!sel) return;
-        sel.innerHTML = '<option value="all">Todas las Categorías</option>';
-        categories.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.name;
-            opt.textContent = c.name;
-            sel.appendChild(opt);
-        });
+        sel.innerHTML = '<option value="all">Todas</option>';
+        categories.forEach(c => sel.innerHTML += `<option value="${c.name}">${c.name}</option>`);
     }
-    
-    // Exportar
-    window.exportData = (format) => {
-        const data = products.map(p => ({
-            ID: p.id, Titulo: p.title, Codigo: p.code, Categoria: p.category, 
-            Precio: p.price, Stock: p.stock
-        }));
-        
-        // Lógica simple CSV
-        const header = Object.keys(data[0]).join(',');
-        const rows = data.map(obj => Object.values(obj).join(',')).join('\n');
-        const blob = new Blob([header + '\n' + rows], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = 'productos.csv'; a.click();
-    };
 
-    // Inicializar Categoría nueva en select
-    window.addNewCategory = async () => {
-        const n = prompt("Nombre:");
-        if(n) {
-             await sb.from('categories').insert([{name:n.toLowerCase()}]);
-             loadDataFromServer();
-        }
-    };
-
+    // Inicializar
+    loadDataFromServer();
 });
