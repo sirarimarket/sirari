@@ -296,8 +296,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.querySelectorAll('.close-modal').forEach(b=>b.onclick=(e)=>e.target.closest('.modal').classList.add('hidden'));
     loadDataFromServer();
-});
-// =============================================
+
+    // =============================================
     //      NUEVA LÓGICA DEL PANEL ADMIN (V2)
     // =============================================
 
@@ -500,5 +500,5 @@ document.addEventListener('DOMContentLoaded', () => {
         if(originalClear) originalClear(); 
         document.getElementById('product-form').reset();
         document.getElementById('product-id').value = ''; 
-    };
-
+    }; 
+});
