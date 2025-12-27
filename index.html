@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sirari E-Commerce</title>
+    <title>Sirari</title>
+    <link rel="icon" href="TU_URL_DEL_FAVICON.png" type="image/png">
+    
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -12,14 +14,14 @@
 
     <section id="login-view" class="view hidden">
         <div class="login-container">
-            <h1>SIRARI - Acceso</h1>
+            <h1>SIRARI - Admin</h1>
             <form id="login-form">
                 <input type="text" id="username" placeholder="Email (admin@sirari.com)" required>
                 <input type="password" id="password" placeholder="Contraseña" required>
-                <button type="submit">Ingresar al Panel</button>
+                <button type="submit">Ingresar</button>
             </form>
             <p id="login-error" class="error-msg"></p>
-            <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda Pública</button>
+            <button id="go-to-store-btn" class="secondary-btn">Ir a la Tienda</button>
         </div>
     </section>
 
@@ -68,10 +70,10 @@
                     <h2>Información del Usuario</h2>
                     <div class="admin-card">
                         <p><strong>Rol:</strong> Administrador Principal</p>
-                        <p><strong>Email:</strong> (Usuario actual)</p>
+                        <p><strong>Email:</strong> admin@sirari.com</p>
                         <p><strong>Estado:</strong> Activo</p>
                         <hr style="margin:15px 0; border:0; border-top:1px solid #eee;">
-                        <p><em>En esta sección se mostrarán los datos de registro de futuros usuarios o sub-admins.</em></p>
+                        <p><em>Aquí se mostrarán los usuarios registrados en el futuro.</em></p>
                     </div>
                 </div>
 
@@ -81,7 +83,7 @@
                     </div>
 
                     <div class="admin-card search-edit-box">
-                        <label><strong>¿Editar producto existente?</strong> Buscalo por su código único:</label>
+                        <label><strong>¿Editar producto existente?</strong> Búscalo por su código:</label>
                         <div style="display:flex; gap:10px; margin-top:10px;">
                             <input type="text" id="search-code-edit" placeholder="Ej: P-001" style="max-width:300px;">
                             <button type="button" class="secondary-btn" onclick="searchProductToEdit()">Buscar y Cargar</button>
@@ -90,9 +92,7 @@
 
                     <div class="admin-card">
                         <form id="product-form">
-                            <input type="hidden" id="product-id"> 
-                            
-                            <div class="form-grid">
+                            <input type="hidden" id="product-id"> <div class="form-grid">
                                 <div class="form-group">
                                     <label>Título del Producto</label>
                                     <input type="text" id="p-title" required>
@@ -138,7 +138,7 @@
                                 <div id="image-url-container">
                                     <input type="url" class="image-input" placeholder="https://ejemplo.com/foto1.jpg">
                                 </div>
-                                <button type="button" onclick="addImageInput()" class="small-btn" style="margin-top:5px; background:#666;">+ Agregar otra URL</button>
+                                <button type="button" onclick="addImageInput()" class="small-btn" style="margin-top:5px; background:#666; color:white;">+ Agregar otra URL</button>
                             </div>
 
                             <div class="form-actions" style="margin-top:20px; text-align:right;">
@@ -229,64 +229,116 @@
                         <p>Esta funcionalidad (Ventas/Notificaciones/Config) estará disponible próximamente.</p>
                     </div>
                 </div>
-
             </main>
         </div>
     </section>
 
     <section id="store-view" class="view">
+        
         <header class="store-header">
-            <div class="logo">SIRARI</div>
-            <div class="search-bar">
-                <input type="text" id="search-input" placeholder="Buscar productos...">
-                <button id="search-btn"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <h1 class="logo">SIRARI</h1>
+            
+            <div class="search-bar desktop-search">
+                <input type="text" id="search-input" placeholder="Buscar por nombre o código...">
             </div>
+
             <div class="header-icons">
-                <div class="cart-icon" onclick="openCheckoutModal()">
-                    <i class="fa-solid fa-cart-shopping"></i>
+                <button id="about-us-btn" class="icon-btn desktop-only" title="Sobre Nosotros">
+                    <i class="fas fa-info-circle"></i>
+                </button>
+                <button id="admin-login-btn" class="icon-btn desktop-only" title="Admin Panel">
+                    <i class="fas fa-user-shield"></i>
+                </button>
+                
+                <button id="cart-btn" class="icon-btn">
+                    <i class="fas fa-shopping-cart"></i>
                     <span id="cart-count">0</span>
-                </div>
-                <div class="admin-icon" id="admin-login-btn">
-                    <i class="fa-solid fa-user-lock"></i>
-                </div>
+                </button>
+                <button id="mobile-menu-btn" class="icon-btn mobile-only">
+                    <i class="fas fa-bars"></i>
+                </button>
             </div>
         </header>
 
-        <div id="category-filters" class="category-scroll">
+        <div id="mobile-sidebar" class="mobile-sidebar">
+            <div class="sidebar-header">
+                <h2>Menú</h2>
+                <button id="close-sidebar-btn">&times;</button>
             </div>
+            <div class="sidebar-content">
+                <div class="search-bar mobile-search-container">
+                    <input type="text" id="mobile-search-input" placeholder="Buscar y presionar Enter...">
+                </div>
+                
+                <a href="#footer-section" class="sidebar-link" id="mobile-about-link">Sobre Nosotros</a>
+                
+                <button id="mobile-admin-link" class="sidebar-link" style="text-align:left; cursor:pointer;">
+                    <i class="fas fa-user-shield" style="margin-right:8px;"></i> Acceso Admin
+                </button>
 
-        <div class="product-grid" id="product-grid">
+                <div class="sidebar-accordion">
+                    <button id="mobile-cats-toggle" class="sidebar-link accordion-btn">
+                        Categorías <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div id="mobile-cats-content" class="accordion-content">
+                        </div>
+                </div>
             </div>
-        
-        <div class="pagination" id="pagination-controls">
-            </div>
-    </section>
-
-    <div id="product-detail-modal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal">&times;</span>
-            <div id="modal-product-info"></div>
         </div>
-    </div>
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-    <div id="checkout-modal" class="modal hidden">
-        <div class="modal-content checkout-content">
-            <span class="close-modal" onclick="document.getElementById('checkout-modal').classList.add('hidden')">&times;</span>
-            <h2>Tu Carrito</h2>
-            <div id="cart-items-container"></div>
-            <div class="cart-total">
-                Total: <span id="cart-total-price">Bs. 0.00</span>
+        <nav id="category-filters"></nav>
+
+        <main>
+            <div id="product-grid" class="product-grid"></div>
+            <div id="pagination-controls" class="pagination-container"></div>
+        </main>
+
+        <footer id="footer-section">
+            <div class="footer-content">
+                <div class="footer-left">
+                    <h3>Sobre Nosotros</h3>
+                    <p>En SIRARI Tienda Online nos dedicamos a ofrecerte los mejores productos con la mejor calidad y precio del mercado. Nuestra misión es brindarte una experiencia de compra segura, rápida y confiable desde la comodidad de tu hogar.</p>
+                </div>
+                <div class="footer-right">
+                    <h4>Redes Sociales</h4>
+                    <div class="social-icons">
+                        <a href="https://facebook.com" target="_blank" class="social-link fb"><i class="fab fa-facebook-f"></i></a>
+                        <a href="https://instagram.com" target="_blank" class="social-link ig"><i class="fab fa-instagram"></i></a>
+                        <a href="https://tiktok.com" target="_blank" class="social-link tk"><i class="fab fa-tiktok"></i></a>
+                        <a href="https://twitter.com" target="_blank" class="social-link tw"><i class="fab fa-x-twitter"></i></a>
+                        <a href="https://wa.me/59173164833" target="_blank" class="social-link wa"><i class="fab fa-whatsapp"></i></a>
+                        <a href="mailto:info@sirari.com" class="social-link em"><i class="fas fa-envelope"></i></a>
+                    </div>
+                </div>
             </div>
-            
-            <button id="checkout-btn" class="primary-btn" style="width:100%; margin-top:10px;">Hacer Pedido</button>
+            <div class="footer-bottom">
+                <p>&copy; 2024 SIRARI. Todos los derechos reservados.</p>
+            </div>
+        </footer>
 
-            <div id="checkout-form-container" class="hidden">
+        <div id="product-detail-modal" class="modal hidden">
+            <div class="modal-content" id="product-detail-content"></div>
+        </div>
+        
+        <div id="cart-modal" class="modal hidden">
+            <div class="modal-content cart-modal-content">
+                <button class="close-modal" id="close-cart-modal">×</button>
+                <h2>Tu Carrito</h2>
+                <div id="cart-items"></div>
                 <hr>
-                <h3>Datos de Envío</h3>
+                <div class="cart-total"><strong>Total: Bs. <span id="cart-total">0.00</span></strong></div>
+                <button id="checkout-btn" class="primary-btn" disabled>Enviar Pedido</button>
+            </div>
+        </div>
+
+        <div id="checkout-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="close-modal" id="close-checkout-modal">×</button>
+                <h2>Datos de Envío</h2>
                 <form id="checkout-form">
-                    <div class="form-group"><input type="text" id="customer-name" placeholder="Tu Nombre Completo" required></div>
-                    <div class="form-group"><textarea id="customer-location" placeholder="Dirección / Referencia de Ubicación" rows="2" required></textarea></div>
-                    
+                    <div class="form-group"><label>Nombre Completo:</label><input type="text" id="customer-name" required></div>
+                    <div class="form-group"><label>Referencia de Dirección:</label><textarea id="customer-location" rows="2" required></textarea></div>
                     <div id="location-question-step">
                         <p style="text-align:center; margin-bottom:10px;">¿Estás en el lugar de entrega?</p>
                         <div style="display:flex; gap:10px; justify-content:center;">
@@ -294,23 +346,18 @@
                             <button type="button" id="btn-no-location" class="secondary-btn">NO</button>
                         </div>
                     </div>
-
                     <div id="map-container-wrapper" class="hidden">
-                        <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación exacta:</p>
+                        <p style="font-size:0.9rem; color:#666;">Mueve el marcador a tu ubicación:</p>
                         <div id="delivery-map"></div>
                         <button type="button" id="confirm-map-location" class="primary-btn small-btn" style="width:100%; margin-top:10px;">Confirmar ubicación</button>
                     </div>
-                    
                     <p id="location-status" class="location-status-msg"></p>
-                    
                     <button type="submit" id="checkout-submit-btn" class="primary-btn hidden">Finalizar y Enviar WhatsApp</button>
                 </form>
             </div>
         </div>
-    </div>
-
-    <div id="toast" class="toast-notification">Mensaje</div>
-
+    </section>
+    
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="app.js"></script>
