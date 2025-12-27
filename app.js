@@ -87,6 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const { error } = await sb.auth.signInWithPassword({ email: document.getElementById('username').value, password: document.getElementById('password').value });
         if(error) document.getElementById('login-error').textContent = 'Error credenciales';
         else { showView('admin'); loadDataFromServer(); }
+        switchAdminTab('user')
     };
 
     // --- BÚSQUEDA ---
@@ -500,3 +501,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('product-form').reset();
         document.getElementById('product-id').value = ''; 
     };
+
